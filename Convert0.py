@@ -159,12 +159,12 @@ ErrorAndTimeStep = "\
   err = MAXVAL(ABS(yerr/tolh))\n\
   IF (err.GT.1.D0) THEN\n\
     rerun = .True.\n\
-    hnew = MAX(0.9D0*err**(-%s), 0.1D0)*h ! no less than factor of 0.1\n\
-    ! PRINT *, 'Decrease time step by', 0.9D0*err**(-%s),MAX(0.9D0*err**(-%s), 0.1D0)\n\
+    hnew = MAX(0.8D0*err**(-%s), 0.1D0)*h ! no less than factor of 0.1\n\
+    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-%s),MAX(0.8D0*err**(-%s), 0.1D0)\n\
   ELSE\n\
     rerun = .False.\n\
-    hnew = MIN(5.D0, 0.9D0*err**(-%s))*h ! no more than factor of 5\n\
-    ! PRINT *, 'Increase time step by', 0.9D0*err**(-%s),MIN(5.D0,0.9D0*err**(-%s))\n\
+    hnew = MIN(5.D0, 0.8D0*err**(-%s))*h ! no more than factor of 5\n\
+    ! PRINT *, 'Increase time step by', 0.8D0*err**(-%s),MIN(5.D0,0.8D0*err**(-%s))\n\
   END IF\n\
 \n\
   ! adjust the step\n\

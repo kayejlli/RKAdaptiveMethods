@@ -33,7 +33,7 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
     atol = np.full(np.size(y0), atol) 
   IntArray, RealArray = ode.odeinterfacemod.ode(y0,t0,tfinal,method,filename,atol,rtol,max_step,min_step,first_step,Print6)
   RealArrayIndexes = ['cpuTime', 'Minh', 'Maxh'] 
-  IntArrayIndexes = ['Rejected','Accepted','Evaluated','TotalSteps','ReachMax','ReachMin'] 
+  IntArrayIndexes = ['Rejected','Accepted','Evaluated','TotalSteps','ReachMax','ReachMin', 'Success'] 
   Dict = {}
   for i, name in enumerate(RealArrayIndexes):
     Dict[name] = RealArray[i]

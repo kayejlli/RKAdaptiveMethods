@@ -74,8 +74,10 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   IntegerOut(4) = TotalSteps
   IntegerOut(5) = ReachMax
   IntegerOut(6) = ReachMin
-
+  IntegerOut(7) = 1 ! Sucess 
+  
   IF (test) THEN
+    IntegerOut(7) = 0 ! failed
     PRINT *, 'The program ended unexpectedly' 
   END IF
   RETURN
@@ -102,12 +104,28 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
           ACTION="WRITE", POSITION="APPEND")
    END IF
 
-   IF (SolverName=='rk1412Feagin') THEN
-     iterations => rk1412FeaginEachStep
+   IF (SolverName=='rk54Sharp') THEN
+     iterations => rk54SharpEachStep
+   ELSE IF (SolverName=='rk54Dormand') THEN
+     iterations => rk54DormandEachStep
+   ELSE IF (SolverName=='rk65Dormand') THEN
+     iterations => rk65DormandEachStep
+   ELSE IF (SolverName=='rk87Dormand') THEN
+     iterations => rk87DormandEachStep
+   ELSE IF (SolverName=='rk87EnrightVerner') THEN
+     iterations => rk87EnrightVernerEachStep
    ELSE IF (SolverName=='rk108Feagin') THEN
      iterations => rk108FeaginEachStep
+   ELSE IF (SolverName=='rk109Legendre') THEN
+     iterations => rk109LegendreEachStep
    ELSE IF (SolverName=='rk1210Feagin') THEN
      iterations => rk1210FeaginEachStep
+   ELSE IF (SolverName=='rk1211Peter') THEN
+     iterations => rk1211PeterEachStep
+   ELSE IF (SolverName=='rk1412Long') THEN
+     iterations => rk1412LongEachStep
+   ELSE IF (SolverName=='rk1412Feagin') THEN
+     iterations => rk1412FeaginEachStep
    ELSE
      PRINT '(3A)', 'Error: You should choose between [rk1412Feagin,rk108Feagin,rk1210Feagin] but received [', SolverName, ']' 
    END IF

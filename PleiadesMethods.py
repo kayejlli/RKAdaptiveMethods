@@ -1,8 +1,6 @@
 from odefortran import * 
 from Common import *
 from scipy.interpolate import InterpolatedUnivariateSpline as newinterp1d
-
-# solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-6, rtol=1E-7, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True) 
  
 FileName = sys.argv[0].replace('.py','')
 
@@ -19,38 +17,46 @@ yfinal = np.array(yfinal)
 
 fig, ax = plt.subplots() 
 fig1, ax1 = plt.subplots() 
+figxy, axxy = plt.subplots(2)
 
 tolArray = [1E-16, 1E-15, 1E-14, 1E-13, 1E-12, 1E-11, 1E-10, 1E-9, 1E-8, 1E-6, 1E-5]
 
 methods = ['rk1412Feagin','rk108Feagin','rk1210Feagin','rk87EnrightVerner','rk65Dormand','rk1412Long','rk1211Peter','rk109Legendre','rk87Dormand']
-methods = ['rk1412Feagin','rk108Feagin','rk1210Feagin'] 
+# methods = ['rk1412Feagin','rk108Feagin','rk1210Feagin'] 
 
 for i, method in enumerate(methods):
-  scd = np.full(np.size(tolArray), 1E10) 
-  mescd = np.full(np.size(tolArray), 1E10) 
-  cpuTime = np.full(np.size(tolArray), 1E10) 
+  scd = np.full(np.size(tolArray), -1E10) 
+  mescd = np.full(np.size(tolArray), -1E10) 
+  cpuTime = np.full(np.size(tolArray), -1E10) 
   for j, atol in enumerate(tolArray):
-    rtol = 0
+    rtol = 1E-20
     filename = 'Data/%s_%s_rtol%s_atol%s.dat' % (FileName, method, PrintExponentialBetter(rtol), PrintExponentialBetter(atol)) 
-    t, y, outDict = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-2,max_step=1.,min_step=1E-5,Print6=False) 
-    scd[j] = (np.max(abs(yfinal[:14]-y[-1][:14])/abs(yfinal[:14]))) 
-    mescd[j] = np.max(abs(yfinal-y[-1])/(atol + rtol*abs(yfinal))) 
-    cpuTime[j] = outDict['cpuTime'] 
-    # print('mescd[i, j]=%e' % (mescd[i, j])) 
+    t, y, outDict = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-2,max_step=1.,min_step=1E-10,Print6=False) 
+    if outDict['Success']:
+      scd[j] = (np.max(abs(yfinal[:14]-y[-1][:14])/abs(yfinal[:14]))) 
+      mescd[j] = np.max(abs(yfinal-y[-1])/(atol + rtol*abs(yfinal))) 
+      cpuTime[j] = outDict['cpuTime'] 
+    else:
+      t, y, outDict = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-2,max_step=1.,min_step=1E-5,Print6=True) 
     print('rtol=%s, atol=%s, scd=%5.2f, mescd=%5.2f' % (PrintExponentialBetter(rtol), PrintExponentialBetter(atol), -np.log(scd[j])/np.log(10.), -np.log(mescd[j])/np.log(10.)))  
-  color = Color6[i]
-  ax.loglog(tolArray, scd, color=color, label=method, marker=Marker5[i]) 
-  ax1.semilogy(-np.log(scd)/np.log(10.), cpuTime, color=color, label=method, marker=Marker5[i]) 
+    if j == 0:
+      #axxy[0].plot(y[:, IndexList.index('x1')], y[:, IndexList.index('y1')], color=color)
+      #axxy[1].plot(y[:, IndexList.index('x3')], y[:, IndexList.index('y3')], color=color)
+      #axxy[0].plot(t, y[:, IndexList.index('x1')], color=color)
+      line, = axxy[0].plot(t, y[:, IndexList.index('x1')])
+      color = line.get_color()
+      axxy[1].plot(t, y[:, IndexList.index('y1')], color=color)
+  ax.loglog(tolArray, scd, label=method, marker=Marker5[np.mod(i,5)], color=color) 
+  ax1.semilogy(-np.log(scd)/np.log(10.), cpuTime, color=color, label=method, marker=Marker5[np.mod(i,5)]) 
+  
 
-# ax.loglog([], [], 'k--', label=r'$rtol$') 
 ax.axis('equal')
-# ax.loglog(tolArray, tolArray, 'k--', alpha=0.7) 
 addReference(ax, 1E-14, mode='x', ls='k:', alpha=0.7)
 addReference(ax, 1E-14, mode='y', ls='k:', alpha=0.7)
 
 ax.legend(loc='best',fontsize=10.)
 ax.set_xlabel(r'atol')
-ax.set_ylabel(r'err')
+ax.set_ylabel(r'$\left\Vert \delta y/y \right\Vert_{\infty}$')
 fig.tight_layout()
 
 fig.savefig('Plots/%s_error.png' % (FileName), dpi=300)
@@ -64,8 +70,17 @@ fig1.tight_layout()
 fig1.savefig('Plots/%s_scd_cpu.png' % (FileName), dpi=300)
 fig1.clf()
 
-#    ls = ['-', '--', '-.'][j]
-    
+for i in range(2):    
+  axxy[i].legend(loc='best')
+axxy[0].set_xlim(0., 3.)
+axxy[1].set_xlim(0., 3.)
+axxy[0].set_ylim(-1, 3)
+axxy[1].set_ylim(-4, 4)
+
+figxy.tight_layout()
+figxy.savefig('Plots/%s_x1y1.png' % (FileName), dpi=300)
+figxy.clf()
+
 
   
   

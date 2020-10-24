@@ -2,6 +2,7 @@ from RKGeneral import Printdy, PrintOutdys
 import numpy as np
 import sys
 from Common import GetFortranFloat
+from mpmath import mp, mpf, nstr, nprint
 
 # python3 Convert0.py rk1412.py 35 12 Feagin 
 
@@ -62,23 +63,23 @@ with open(filename,'r') as f:
             #print('\n'*2) 
             f90.write('\n'*2) 
           Main = True 
-          #print('REAL(KIND=8), PARAMETER, PRIVATE :: &') 
-          #f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          #print('REAL(KIND=16), PARAMETER, PRIVATE :: &') 
+          #f90.write('REAL(KIND=16), PARAMETER, PRIVATE :: &\n') 
         else:
           f90.write('! ' + line[i:])
           # print('! ' + line[i:-1]) 
       elif line[0] in ['a', 'b', 'k'] and '=' in line:
         if not aStart and (line[0] == 'a'):
           f90.write('! a[i,j] \n') 
-          f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          f90.write('REAL(KIND=16), PARAMETER, PRIVATE :: &\n') 
           aStart = True
         if not bStart and (line[0] == 'b'):
           f90.write('! b[i] are coefficients for nodes k[i] \n') 
-          f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          f90.write('REAL(KIND=16), PARAMETER, PRIVATE :: &\n') 
           bStart = True
         if not kStart and (line[0] == 'k'):
           f90.write('! k[i] are the nodes \n') 
-          f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          f90.write('REAL(KIND=16), PARAMETER, PRIVATE :: &\n') 
           kStart = True
         left, right = line[:-1].split('=') 
         out = '%s=%s' % (left, GetFortranFloat(right.strip(), Precision=60, fortran=True))  
@@ -98,16 +99,16 @@ SubStart='\n\n\
 CONTAINS\n\
 \n\
 SUBROUTINE %sEachStep(y0,yn,h,hnew,rerun,test)\n\
- REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)\n\
- REAL(KIND=8), INTENT(IN) :: h ! initial step size\n\
- REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size\n\
+ REAL(KIND=16), DIMENSION(:), INTENT(IN) :: y0     ! y(t)\n\
+ REAL(KIND=16), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)\n\
+ REAL(KIND=16), INTENT(IN) :: h ! initial step size\n\
+ REAL(KIND=16), INTENT(OUT) :: hnew       ! new step size\n\
  LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ymax ! the max value among y0 and yn\n\
- REAL(KIND=8) :: err\n\
+ REAL(KIND=16), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem\n\
+ REAL(KIND=16), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method\n\
+ REAL(KIND=16), DIMENSION(SIZE(y0)) :: ynp  ! the embedded\n\
+ REAL(KIND=16), DIMENSION(SIZE(y0)) :: ymax ! the max value among y0 and yn\n\
+ REAL(KIND=16) :: err\n\
 ' % (modName) 
 f90.write(SubStart) 
 
@@ -129,7 +130,7 @@ def IntToFloat(intForm):
   first, second = raw.split('e') 
   while first[-1] == '0': # trim the 0
     first = first[:-1] 
-  return first + 'D' + '%d' % (int(second)) 
+  return first + 'Q' + '%d' % (int(second)) 
 
 def ConvertFraction(form):
   numerator, denominator = form.split('/') 
@@ -145,9 +146,9 @@ if error:
   No2 = int(form.split('-')[1].split('x')[-1].replace(')','')) 
   print('  yerr = %s*h*ABS(dy%d-dy%d)' % (coef, No1, No2), file=f90) 
 
-
-Exp1 = '%18.13e' % (1./(order+1))  
-Exp1 = Exp1.replace('e', 'D') 
+Exp1 = nstr(mpf(1)/mpf(order+1), 60, show_zero_exponent=True, min_fixed=-2, strip_zeros=True)  
+# Exp1 = '%18.13e' % (1./(order+1))  
+Exp1 = Exp1.replace('e', 'Q') 
 ErrorAndTimeStep = "\
   ! Find the max value of y among this step\n\
   DO i = 1, SIZE(y0)\n\
@@ -157,23 +158,23 @@ ErrorAndTimeStep = "\
 \n\
   ! using the error to estimate the next step\n\
   err = MAXVAL(ABS(yerr/tolh))\n\
-  IF (err.GT.1.D0) THEN\n\
+  IF (err.GT.1.Q0) THEN\n\
     rerun = .True.\n\
-    hnew = MAX(0.8D0*err**(-%s), 0.1D0)*h ! no less than factor of 0.1\n\
-    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-%s),MAX(0.8D0*err**(-%s), 0.1D0)\n\
+    hnew = MAX(0.8Q0*err**(-%s), 0.1Q0)*h ! no less than factor of 0.1\n\
+    ! PRINT *, 'Decrease time step by', 0.8Q0*err**(-%s),MAX(0.8Q0*err**(-%s), 0.1Q0)\n\
   ELSE\n\
     rerun = .False.\n\
-    hnew = MIN(5.D0, 0.8D0*err**(-%s))*h ! no more than factor of 5\n\
-    ! PRINT *, 'Increase time step by', 0.8D0*err**(-%s),MIN(5.D0,0.8D0*err**(-%s))\n\
+    hnew = MIN(5.Q0, 0.8Q0*err**(-%s))*h ! no more than factor of 5\n\
+    ! PRINT *, 'Increase time step by', 0.8Q0*err**(-%s),MIN(5.Q0,0.8Q0*err**(-%s))\n\
   END IF\n\
 \n\
   ! adjust the step\n\
   hnew = MAX(MIN(hnew,MaxStepSize),MinStepSize)\n\
   IF (rerun) THEN\n\
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min\n\
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1Q-13) THEN ! h is already the min\n\
       test = .True. ! stop the program\n\
     ELSE\n\
-      hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half\n\
+      hnew = MAX(MinStepSize,MIN(hnew, h*0.5Q0)) ! if have not reduced, reduce to half\n\
     END IF\n\
     RETURN\n\
   END IF\n\
@@ -182,10 +183,10 @@ ErrorAndTimeStep = "\
   DO i = 1, SIZE(y0)\n\
     CALL checkNanInf(yn(i), rerun)\n\
     IF (rerun) THEN\n\
-      IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min\n\
+      IF (ABS(h-MinStepSize)/MinStepSize.LE.1Q-13) THEN ! h is already the min\n\
         test = .True. ! stop the program\n\
       ELSE\n\
-        hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half\n\
+        hnew = MAX(MinStepSize,MIN(hnew, h*0.5Q0)) ! if have not reduced, reduce to half\n\
       END IF\n\
       RETURN\n\
     END IF\n\

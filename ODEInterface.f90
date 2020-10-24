@@ -20,22 +20,22 @@ IMPLICIT NONE
 CONTAINS
 
 SUBROUTINE OUTPUT(t, yArray, UnitNo)
-  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: yArray
-  REAL(KIND=8), INTENT(IN) :: t
+  REAL(KIND=16), DIMENSION(:), INTENT(IN) :: yArray
+  REAL(KIND=16), INTENT(IN) :: t
   INTEGER, INTENT(IN) :: UnitNo
   ! general output format 
-  WRITE(UNIT=UnitNo, FMT='(50E30.20)') t, yArray
+  WRITE(UNIT=UnitNo, FMT='(50E50.40)') t, yArray
   RETURN 
 END SUBROUTINE 
 
 
 SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut)
   CHARACTER(LEN=*), INTENT(IN) :: filename, SolverName
-  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0, atolInput
-  REAL(KIND=8), INTENT(IN) :: t0, tfinal, rtolInput, max_h, min_h, hinit 
+  REAL(KIND=16), DIMENSION(:), INTENT(IN) :: y0, atolInput
+  REAL(KIND=16), INTENT(IN) :: t0, tfinal, rtolInput, max_h, min_h, hinit 
   INTEGER, DIMENSION(10), INTENT(OUT) :: IntegerOut
   REAL(KIND=8), DIMENSION(10), INTENT(OUT) :: RealOut 
-  REAL(KIND=8) :: CPUTime0, CPUTime1 
+  REAL(KIND=16) :: CPUTime0, CPUTime1 
   LOGICAL, INTENT(IN) :: Print6Input
   LOGICAL :: test
 
@@ -53,8 +53,8 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   TotalSteps = 0
   ReachMax = 0
   ReachMin = 0
-  Minh = 1D14
-  Maxh = 1D-14
+  Minh = 1Q14
+  Maxh = 1Q-14
   IntegerOut = 0
 
   ! CALL RunANDWrite(t0,tfinal,y0,ODEMode,filename,rtolInput,test,SolverName,StepPerOrbit) 
@@ -63,9 +63,9 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   CALL CPU_Time(CPUTime1) 
 
   ! assign values 
-  RealOut(1) = CPUTime1 - CPUTime0 
+  RealOut(1) = CPUTime1 - CPUTime0
   RealOut(2) = Minh
-  RealOut(3) = Maxh 
+  RealOut(3) = Maxh
 
   ! assign values 
   IntegerOut(1) = Rejected
@@ -86,15 +86,15 @@ END SUBROUTINE
 SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit) 
   LOGICAL, INTENT(OUT) :: test
   CHARACTER(LEN=*), INTENT(IN) :: filename, SolverName
-  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0
-  REAL(KIND=8), INTENT(IN) :: t0, tfinal, hinit ! initial time step
-  REAL(KIND=8), DIMENSION(SIZE(y0)) :: yArray, y1Array, ydotNew, ydotOld
+  REAL(KIND=16), DIMENSION(:), INTENT(IN) :: y0
+  REAL(KIND=16), INTENT(IN) :: t0, tfinal, hinit ! initial time step
+  REAL(KIND=16), DIMENSION(SIZE(y0)) :: yArray, y1Array, ydotNew, ydotOld
   ! INTEGER :: IterationCounts, i
   LOGICAL :: GoodToWrite, rerun
-  REAL(KIND=8) :: time, PrintTimePassed, PrintAtTime, TimePassed, TimeStep, h, hnew, &  
+  REAL(KIND=16) :: time, PrintTimePassed, PrintAtTime, TimePassed, TimeStep, h, hnew, &  
   & hold
   PROCEDURE(ODEMethods), POINTER :: iterations => NULL() ! choose different solvers 
-  CHARACTER(LEN=*), PARAMETER :: screen_fmt = "(1X,'t=',F5.2,' x1=',E18.10,' y1=',E18.10,' NSTEP=',I4)"  
+  CHARACTER(LEN=*), PARAMETER :: screen_fmt = "(1X,'t=',F5.2,' x1=',E18.10,' y1=',E18.10,' NSTEP=',I6)"  
   INTEGER :: Iteration 
   
    IF (LEN(filename)>0) THEN
@@ -138,16 +138,16 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
    ! IterationCounts = 0
    test = .False.
    rerun = .False. 
-   PrintTimePassed = 0.D0
-   TimePassed = 0.D0
-   PrintAtTime = tfinal/2D1 ! print about 20 steps
+   PrintTimePassed = 0.Q0
+   TimePassed = 0.Q0
+   PrintAtTime = tfinal/2Q1 ! print about 20 steps
    ! Print data to file at dt = TimeStep 
-   TimeStep = tfinal/5.123124D5
+   TimeStep = tfinal/5.123124Q4
 
-   ! MaxStepSize = (2.D0*Pi*ai**1.5)/Sqrt(Mi) / 1D-2
-   ! MinStepSize = (2.D0*Pi*ai**1.5)/Sqrt(Mi) / 1D4
-   ! MaxStepSize = TimeStep/5.D0
-   ! MinStepSize = h*1D-3
+   ! MaxStepSize = (2.Q0*Pi*ai**1.5)/Sqrt(Mi) / 1Q-2
+   ! MinStepSize = (2.Q0*Pi*ai**1.5)/Sqrt(Mi) / 1Q4
+   ! MaxStepSize = TimeStep/5.Q0
+   ! MinStepSize = h*1Q-3
    ! PRINT *, h, MaxStepSize, MinStepSize
   
    ! CALL dev(yArray, dot
@@ -175,8 +175,8 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
        h = hnew
        Iteration = Iteration + 1
        ! exit when step size is bad 
-       IF ((Abs(hnew-hold)/hold).LT.1D-13) test = .True.
-       IF ((Abs(hold-MinStepSize)/MinStepSize).LE.1D-13) test = .True.
+       IF ((Abs(hnew-hold)/hold).LT.1Q-13) test = .True.
+       IF ((Abs(hold-MinStepSize)/MinStepSize).LE.1Q-13) test = .True.
        IF (test) EXIT       ! Bad value, exit the program 
      END DO
      IF (test) EXIT ! Bad value, exit the program 
@@ -184,9 +184,9 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
      ! calculate the max and min time step reached, and how many times 
      Minh = MIN(Minh, hold)
      Maxh = MAX(Maxh, hold) 
-     IF (ABS(hold-MinStepSize)/MinStepSize.LE.1D-12) THEN
+     IF (ABS(hold-MinStepSize)/MinStepSize.LE.1Q-12) THEN
        ReachMin = ReachMin + 1
-     ELSE IF (ABS(hold-MaxStepSize)/MaxStepSize.LE.1D-12) THEN
+     ELSE IF (ABS(hold-MaxStepSize)/MaxStepSize.LE.1Q-12) THEN
        ReachMax = ReachMax + 1
      END IF
 
@@ -223,7 +223,7 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
      IF (time+h.GT.tfinal) THEN
        IF (time.GE.tfinal) EXIT 
        h = tfinal - time
-       IF (h<1D-15) EXIT
+       IF (h<1Q-15) EXIT
      END IF
   END DO
    

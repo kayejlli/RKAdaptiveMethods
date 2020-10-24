@@ -122,7 +122,7 @@ def mpfToString(valuempf,fortran=True, Precision=60):
   if not 'e' in valuestring:
     raise ValueError(valuestring) 
   if fortran:
-    return valuestring.replace('e+', 'D').replace('e','D')
+    return valuestring.replace('e+', 'Q').replace('e','Q')
   else:
     return valuestring.replace('e+', 'E').replace('e','E') 
 

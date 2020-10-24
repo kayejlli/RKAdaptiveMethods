@@ -4,7 +4,7 @@ import sys
 # from RKGeneral import Printdy, PrintOutdys 
 
 
-def Printdy(jsize, breakNo, OpenFile, Head=' REAL(KIND=8), DIMENSION(SIZE(y0)) :: ', mode='y'):
+def Printdy(jsize, breakNo, OpenFile, Head=' REAL(KIND=16), DIMENSION(SIZE(y0)) :: ', mode='y'):
   # print(Head, file=OpenFile) # REAL(KIND=DP), DIMENSION(SIZE(y0)) :: 
   if mode == 'y':
     left = jsize - 1 
@@ -74,8 +74,8 @@ def PrintOutdys(OpenFile, Msize=13, devString = 'dev(y0,dy0,test)', breakNo = 6,
     if test:
       testString = '\
 %sIF (test) THEN ! bad dy \n\
-%s  IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program \n\
-%s  hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step \n\
+%s  IF (ABS(h-MinStepSize)/MinStepSize.LE.1Q-13) RETURN ! stop the program \n\
+%s  hnew = MAX(MIN(h/2.Q0,MaxStepSize),MinStepSize) ! reduce step \n\
 %s  rerun = .True.\n\
 %s  test = .False.\n\
 %s  RETURN\n\
@@ -107,8 +107,8 @@ if __name__ == '__main__':
   #  lines = f.readlines()
   #  for line in lines:
   #    print(line[:-1]) 
-  Printdy(13, breakNo-1, sys.stdout, Head=' REAL(KIND=8), DIMENSION(SIZE(y0)) :: ')
-  Printdy(13, breakNo-1, sys.stdout, Head=' REAL(KIND=8), DIMENSION(SIZE(y0)) :: ', mode='dy')
+  Printdy(13, breakNo-1, sys.stdout, Head=' REAL(KIND=16), DIMENSION(SIZE(y0)) :: ')
+  Printdy(13, breakNo-1, sys.stdout, Head=' REAL(KIND=16), DIMENSION(SIZE(y0)) :: ', mode='dy')
 
 
 

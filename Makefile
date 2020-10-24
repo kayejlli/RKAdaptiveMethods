@@ -104,12 +104,12 @@ libSolvers.a: $(Modules:%=%.o)
 
 odeqp.so: ODEInterface.f90 ODEInterfaceQP.f90 libSolvers.a
 	rm -rf odeqp.so odeqp.*.so odeqp.*.so.dSYM 
-	f2py -c ODEInterface.f90 ODEInterfaceQP.f90 -m odeqp --opt='-O3 -Wreal-q-constant' --f90exec=$(fortranCompiler) > odeqp.log 2> odeqp.err
+	f2py -L. -lSolvers -c ODEInterface.f90 ODEInterfaceQP.f90 -m odeqp --opt='-O3 -Wreal-q-constant' --f90exec=$(fortranCompiler) > odeqp.log 2> odeqp.err
 	ln -s odeqp.*.so odeqp.so
 
 
 PleiadesMethodsFiles0 := Data/PleiadesMethods_SOLVER_rtolTOL_atolTOL.npz
-tols:= 1E-35 1E-32 1E-30 1E-25 1E-20 1E-16 1E-15 1E-14 1E-13 1E-12 1E-11 1E-10 1E-9 1E-8 1E-6 1E-5
+tols:= 1E-32 1E-30 1E-29 1E-28 1E-26 1E-25 1E-20 1E-16 1E-15 1E-14 1E-13 1E-12 1E-11 1E-10 1E-9 1E-8 1E-6 1E-5
 
 PleiadesMethodsFiles1 = $(foreach Method,$(SolverModules), $(subst SOLVER,$(Method),$(PleiadesMethodsFiles0))) 
 PleiadesMethodsFiles2 = $(foreach tol,$(tols), $(subst TOL,$(tol),$(PleiadesMethodsFiles1))) 

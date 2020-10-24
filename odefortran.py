@@ -101,6 +101,7 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=mpf('1E-6'),r
       for j in range(np.shape(y)[1]):
         ycopy[i, j] = mpf(y[i,j])  
     np.savez(filename.replace('dat', 'npz'), t=t, y=ycopy, msg=Dict)  
+    rmrf(filename) 
     if load:
       return t, ycopy, Dict
     else:
@@ -122,7 +123,7 @@ if __name__ == '__main__':
   0.3667922227200571,-0.3474046353808490,0.2344915448180937E1,-0.1947020434263292E1]
   yfinal = [mpf('%20.15e' % yEach) for yEach in yfinal]
   rmrf('Data/Reference.npz') 
-  t, y, outputDict = solve_ivp_(mpf('0.'), mpf('3.'), y0, filename='Data/Reference.dat', atol=mpf('1E-34'), rtol=mpf('1E-34'), first_step=mpf('1E-3'), max_step=mpf('1.'), min_step=mpf('1E-10'), Print6=True, load=True) 
+  t, y, outputDict = solve_ivp_(mpf('0.'), mpf('3.'), y0, filename='Data/Reference.dat', atol=mpf('1E-15'), rtol=mpf('1E-15'), first_step=mpf('1E-3'), max_step=mpf('1.'), min_step=mpf('1E-10'), Print6=True, load=True) 
   # data = np.load(filename) 
   # t = data['t']
   # y = data['y']

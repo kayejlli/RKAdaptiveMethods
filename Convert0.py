@@ -146,8 +146,9 @@ if error:
   print('  yerr = %s*h*ABS(dy%d-dy%d)' % (coef, No1, No2), file=f90) 
 
 
-Exp1 = '%18.13e' % (1./(order+1))  
-Exp1 = Exp1.replace('e', 'D') 
+Exp1 = '1.D0/%d.D0' % (order+1) 
+# Exp1 = '%20.15e' % (1./(order+1))  
+# Exp1 = Exp1.replace('e', 'D') 
 ErrorAndTimeStep = "\
   ! Find the max value of y among this step\n\
   DO i = 1, SIZE(y0)\n\

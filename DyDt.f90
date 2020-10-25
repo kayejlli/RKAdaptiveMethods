@@ -34,7 +34,7 @@ SUBROUTINE dev(y,dy,test)
       mj = DFLOAT(j)    ! mass
       IF (j==i) CYCLE
       rij = Sqrt((y(i)-y(j))**2 + (y(i+7)-y(j+7))**2)  
-      IF (rij.LE.1E-15) THEN
+      IF (rij.LE.1D-15) THEN
         test = .True.
         RETURN 
       END IF

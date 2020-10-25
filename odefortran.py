@@ -1,7 +1,10 @@
 import numpy as np
 import ode
-import sys
+import sys, os
 from Common import rmrf
+from mpmath import mpf, nstr, nprint, mp
+import mpmath
+mp.dps = 50 
 # from odefortran import * 
 # solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-6, rtol=1E-7, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True) 
  
@@ -9,6 +12,9 @@ IndexList = []
 for Name in ['x', 'y', 'dx', 'dy']:
   for i in range(7):
     IndexList.append('%s%d' % (Name, i+1))
+
+if not os.path.exists('Data'): os.makedirs('Data')
+if not os.path.exists('Plots'): os.makedirs('Plots')
 
 def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-3,first_step=1E-3,max_step=np.inf, min_step=0.,Print6=True,load=True):
   """'solve_ivp_' wrapped the fortran code 
@@ -30,6 +36,12 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
   Print6     : logical, True if you want to see output on screen, default True  
 
   """
+  if load and os.path.isfile(filename.replace('dat', 'npz')): # load data, do not calculate
+    data = np.load(filename.replace('dat', 'npz'),allow_pickle=True)
+    try:
+      return data['t'], data['y'], data['msg'].item()
+    except KeyError:
+      rmrf(filename.replace('dat', 'npz')) 
   if np.size(atol) == 1:
     atol = np.full(np.size(y0), atol) 
   IntArray, RealArray = ode.odeinterfacemod.ode(y0,t0,tfinal,method,filename,atol,rtol,max_step,min_step,first_step,Print6)
@@ -45,15 +57,21 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
   if filename == '':
     return 
   else:
-    data = np.loadtxt(filename, dtype=np.float64)
+    data = np.loadtxt(filename, dtype=mpmath.ctx_mp_python.mpf)
     t = data[:, 0]
     y = data[:, 1:] 
+    # convert string data to mpf numbers 
+    t = np.array([mpf(tt) for tt in t]) 
+    ycopy = np.full(np.shape(y), mpf('1.')) 
+    for i in range(np.shape(y)[0]):
+      for j in range(np.shape(y)[1]):
+        ycopy[i, j] = mpf(y[i,j])
     # print(np.shape(data), np.shape(data[0]), np.shape(data[:, 0]))   
     # print(np.shape(t), np.shape(y)) 
-    np.savez(filename.replace('dat', 'npz'), t=t, y=y)  
+    np.savez(filename.replace('dat', 'npz'), t=t, y=ycopy, msg=Dict)  
     rmrf(filename) 
     if load:
-      return t, y, Dict
+      return t, ycopy, Dict
     else:
       return filename.replace('dat', 'npz'), Dict  
 

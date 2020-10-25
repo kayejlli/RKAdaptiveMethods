@@ -24,7 +24,7 @@ SUBROUTINE OUTPUT(t, yArray, UnitNo)
   REAL(KIND=8), INTENT(IN) :: t
   INTEGER, INTENT(IN) :: UnitNo
   ! general output format 
-  WRITE(UNIT=UnitNo, FMT='(50E30.20)') t, yArray
+  WRITE(UNIT=UnitNo, FMT='(50E35.25)') t, yArray
   RETURN 
 END SUBROUTINE 
 

@@ -1192,12 +1192,12 @@ SUBROUTINE rk1412FeaginEachStep(y0,yn,h,hnew,rerun,test)
   err = MAXVAL(ABS(yerr/tolh))
   IF (err.GT.1.D0) THEN
     rerun = .True.
-    hnew = MAX(0.8D0*err**(-7.6923076923077D-02), 0.1D0)*h ! no less than factor of 0.1
-    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-7.6923076923077D-02),MAX(0.8D0*err**(-7.6923076923077D-02), 0.1D0)
+    hnew = MAX(0.8D0*err**(-1.D0/13.D0), 0.1D0)*h ! no less than factor of 0.1
+    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-1.D0/13.D0),MAX(0.8D0*err**(-1.D0/13.D0), 0.1D0)
   ELSE
     rerun = .False.
-    hnew = MIN(5.D0, 0.8D0*err**(-7.6923076923077D-02))*h ! no more than factor of 5
-    ! PRINT *, 'Increase time step by', 0.8D0*err**(-7.6923076923077D-02),MIN(5.D0,0.8D0*err**(-7.6923076923077D-02))
+    hnew = MIN(5.D0, 0.8D0*err**(-1.D0/13.D0))*h ! no more than factor of 5
+    ! PRINT *, 'Increase time step by', 0.8D0*err**(-1.D0/13.D0),MIN(5.D0,0.8D0*err**(-1.D0/13.D0))
   END IF
 
   ! adjust the step

@@ -57,21 +57,15 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
   if filename == '':
     return 
   else:
-    data = np.loadtxt(filename, dtype=mpmath.ctx_mp_python.mpf)
+    data = np.loadtxt(filename, dtype=np.float64)
     t = data[:, 0]
     y = data[:, 1:] 
-    # convert string data to mpf numbers 
-    t = np.array([mpf(tt) for tt in t]) 
-    ycopy = np.full(np.shape(y), mpf('1.')) 
-    for i in range(np.shape(y)[0]):
-      for j in range(np.shape(y)[1]):
-        ycopy[i, j] = mpf(y[i,j])
     # print(np.shape(data), np.shape(data[0]), np.shape(data[:, 0]))   
     # print(np.shape(t), np.shape(y)) 
-    np.savez(filename.replace('dat', 'npz'), t=t, y=ycopy, msg=Dict)  
+    np.savez(filename.replace('dat', 'npz'), t=t, y=y, msg=Dict)  
     rmrf(filename) 
     if load:
-      return t, ycopy, Dict
+      return t, y, Dict
     else:
       return filename.replace('dat', 'npz'), Dict  
 

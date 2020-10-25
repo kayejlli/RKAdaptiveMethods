@@ -14,6 +14,9 @@ from matplotlib import rc
 import numpy as np
 #from matplotlib import ticker
 #from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
+                               AutoMinorLocator)
+
 
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 ## for Palatino and other serif fonts use:
@@ -39,7 +42,7 @@ Color5 = ['b', 'r', 'g', 'm', 'orange']
 Color6 = ['b', 'r', 'g', 'm', 'orange', 'blueviolet'] 
 ls4 = ['-', '--', '-.', ':'] 
 Marker5 = ['o', 'v', '+', 'v', 'x'] 
-
+Marker13 = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'X','D', 'd']
 
 def rmrf(filename):
   try:

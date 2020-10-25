@@ -1,6 +1,7 @@
 import numpy as np
 import ode
 import sys
+from Common import rmrf
 # from odefortran import * 
 # solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-6, rtol=1E-7, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True) 
  
@@ -50,6 +51,7 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
     # print(np.shape(data), np.shape(data[0]), np.shape(data[:, 0]))   
     # print(np.shape(t), np.shape(y)) 
     np.savez(filename.replace('dat', 'npz'), t=t, y=y)  
+    rmrf(filename) 
     if load:
       return t, y, Dict
     else:
@@ -68,7 +70,7 @@ if __name__ == '__main__':
   -0.2590065597810775E1,0.2025053734714242E1,-0.1155815100160448E1,-0.8072988170223021,\
   0.5952396354208710,-0.3741244961234010E1,0.3773459685750630,0.9386858869551073,\
   0.3667922227200571,-0.3474046353808490,0.2344915448180937E1,-0.1947020434263292E1]
-  t, y, outputDict = solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-7, rtol=1E-8, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True, load=True) 
+  t, y, outputDict = solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-15, rtol=1E-15, first_step=1E-2, max_step=1E-3, min_step=1E-4, Print6=True, load=True) 
   # data = np.load(filename) 
   # t = data['t']
   # y = data['y']

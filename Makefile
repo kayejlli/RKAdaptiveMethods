@@ -102,5 +102,7 @@ ode.so: ODEInterface.f90 libSolvers.a
 libSolvers.a: $(Modules:%=%.o)  
 	ar crs $@ $^
 
-
+QPPlots:= Plots/PleiadesMethods_error_QP.png Plots/PleiadesMethods_scd_cpu_QP.png Plots/PleiadesMethods_scd_fcn_QP.png Plots/PleiadesMethods_x1y1_QP.png
+$(QPPlots): # downloaded from mssllay 
+	bash PleiadesMethodsQPPlots.sh
 

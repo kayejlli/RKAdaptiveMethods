@@ -1,6 +1,7 @@
 from odefortran import * 
 from Common import *
 from scipy.interpolate import InterpolatedUnivariateSpline as newinterp1d
+mp.dps = 40
  
 FileName = sys.argv[0].replace('.py','')
 
@@ -18,18 +19,26 @@ print('yfinal', type(yfinal), type(yfinal[0]))
 
 fig, ax = plt.subplots() 
 fig1, ax1 = plt.subplots() 
+figfcn, axfcn = plt.subplots() 
 figxy, axxy = plt.subplots(2)
 
 tolArray = [1E-35, 1E-32, 1E-30, 1E-25, 1E-20, 1E-16, 1E-15, 1E-14, 1E-13, 1E-12, 1E-11, 1E-10, 1E-9, 1E-8, 1E-6, 1E-5]
 tolArray = [1E-32, 1E-25, 1E-20, 1E-16, 1E-15, 1E-14, 1E-13, 1E-12, 1E-11, 1E-10, 1E-9, 1E-8, 1E-6, 1E-5]
+tolArray = [1E-35, 1E-33, 1E-32, 1E-31, 1E-30, 1E-29, 1E-28, 1E-26, 1E-25, 1E-20, 1E-16, 1E-15, 1E-14, 1E-13, 1E-12, 1E-11, 1E-10, 1E-9, 1E-8, 1E-6, 1E-5]
+
 
 methods = ['rk1412Feagin','rk108Feagin','rk1210Feagin','rk87EnrightVerner','rk65Dormand','rk1412Long','rk1211Peter','rk109Legendre','rk87Dormand']
+methods = ['rk54Sharp','rk54Dormand','rk1412Feagin','rk108Feagin','rk1210Feagin','rk87EnrightVerner','rk65Dormand','rk1412Long','rk1211Peter','rk109Legendre','rk87Dormand']
+
+methods = ['rk54Sharp','rk54Dormand','rk65Dormand','rk87Dormand','rk87EnrightVerner','rk108Feagin','rk109Legendre','rk1210Feagin','rk1211Peter','rk1412Long','rk1412Feagin']
+
 # methods = ['rk1412Feagin','rk108Feagin','rk1210Feagin'] 
 
 for i, method in enumerate(methods):
   scd = np.full(np.size(tolArray), -1E10) 
   mescd = np.full(np.size(tolArray), -1E10) 
   cpuTime = np.full(np.size(tolArray), -1E10) 
+  fcn = np.full(np.size(tolArray), -1E10)  
   for j, atol in enumerate(tolArray):
     rtol = atol 
     filename = 'Data/%s_%s_rtol%s_atol%s.dat' % (FileName, method, PrintExponentialBetter(rtol), PrintExponentialBetter(atol)) 
@@ -38,6 +47,7 @@ for i, method in enumerate(methods):
       scd[j] = (np.max(abs(yfinal[:14]-y[-1][:14])/abs(yfinal[:14]))) 
       mescd[j] = np.max(abs(yfinal-y[-1])/(atol + rtol*abs(yfinal))) 
       cpuTime[j] = outDict['cpuTime'] 
+      fcn[j] = outDict['Evaluated']
     #else:
     #  t, y, outDict = solve_ivp_(mpf('0.'),mpf('3.'),y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=mpf('1E-2'),max_step=mpf('1.'),min_step=mpf('1E-10'),Print6=True,load=True)
     print('rtol=%s, atol=%s, scd=%5.2f, mescd=%5.2f' % (PrintExponentialBetter(rtol), PrintExponentialBetter(atol), -np.log(scd[j])/np.log(10.), -np.log(mescd[j])/np.log(10.)))  
@@ -48,9 +58,12 @@ for i, method in enumerate(methods):
       line, = axxy[0].plot(t, y[:, IndexList.index('x1')])
       color = line.get_color()
       axxy[1].plot(t, y[:, IndexList.index('y1')], color=color)
-  ax.loglog(tolArray, scd, label=method, marker=Marker5[np.mod(i,5)], color=color) 
-  ax1.semilogy(-np.log(scd)/np.log(10.), cpuTime, color=color, label=method, marker=Marker5[np.mod(i,5)]) 
-  
+  marker = Marker13[np.mod(i,13)]
+  ax.loglog(tolArray, scd, label=method, marker=marker, color=color) 
+  ax1.semilogy(-np.log(scd)/np.log(10.), cpuTime, color=color, label=method, marker=marker) 
+  # axfcn.loglog(fcn, scd, label=method, marker=marker, color=color) 
+  log = lambda x: np.log(x)/np.log(10.)
+  axfcn.plot(log(fcn),  log(scd), label=method, marker=marker, color=color)
 
 ax.axis('equal')
 addReference(ax, 1E-14, mode='x', ls='k:', alpha=0.7)
@@ -83,6 +96,25 @@ figxy.tight_layout()
 figxy.savefig('Plots/%s_x1y1.png' % (FileName), dpi=300)
 figxy.clf()
 
+
+axfcn.set_xlim(3.03, 9.21) 
+axfcn.set_ylim(-30.5,0.22) 
+axfcn.xaxis.set_major_locator(MultipleLocator(1))
+axfcn.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+axfcn.xaxis.set_minor_locator(AutoMinorLocator(n=5)) 
+axfcn.yaxis.set_major_locator(MultipleLocator(5)) 
+axfcn.yaxis.set_minor_locator(AutoMinorLocator(n=5)) 
+axfcn.grid(True, which='major', color='k', alpha=0.4) 
+axfcn.grid(True, which='minor', color='k', alpha=0.1)
+
+
+axfcn.legend(loc='best',fontsize=10.)
+axfcn.set_ylabel(r'$\log \left\Vert \delta y/y \right\Vert_{\infty}$')
+axfcn.set_xlabel(r'$\log ( {\rm fcn})$')
+
+figfcn.tight_layout()
+figfcn.savefig('Plots/%s_scd_fcn.png' % (FileName), dpi=300)
+figfcn.clf()
 
   
   

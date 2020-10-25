@@ -19,7 +19,7 @@ print('atol = [%e]' % (atol))
 y0 = np.array([3,3,-1,-3,2,-2,2,3,-3,2,0,0,-4,4,0,0,0,0,0,1.75,-1.5,0,0,0,-1.25,1,0,0])
 y0 = np.array([mpf(str(yEach)) for yEach in y0])
 
-methods = ['rk1412Feagin','rk108Feagin','rk1210Feagin','rk87EnrightVerner','rk65Dormand','rk1412Long','rk1211Peter','rk109Legendre','rk87Dormand']
+methods = ['rk54Sharp','rk54Dormand','rk1412Feagin','rk108Feagin','rk1210Feagin','rk87EnrightVerner','rk65Dormand','rk1412Long','rk1211Peter','rk109Legendre','rk87Dormand']
 
 t, y, outDict = solve_ivp_(mpf('0.'),mpf('3.'),y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=mpf('1E-3'),max_step=mpf('1.'),min_step=mpf('1E-10'),Print6=True,load=True)
 if outDict['Success']:

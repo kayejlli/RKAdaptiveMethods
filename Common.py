@@ -5,6 +5,8 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import sys, os
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
+                               AutoMinorLocator)
 
 
 # matplotlib.style.use('default')
@@ -39,6 +41,8 @@ Color5 = ['b', 'r', 'g', 'm', 'orange']
 Color6 = ['b', 'r', 'g', 'm', 'orange', 'blueviolet'] 
 ls4 = ['-', '--', '-.', ':'] 
 Marker5 = ['o', 'v', '+', 'v', 'x'] 
+Marker13 = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'X','D', 'd']
+
 
 
 def rmrf(filename):

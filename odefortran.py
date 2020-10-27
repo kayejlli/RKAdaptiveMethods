@@ -13,8 +13,6 @@ for Name in ['x', 'y', 'dx', 'dy']:
   for i in range(7):
     IndexList.append('%s%d' % (Name, i+1))
 
-if not os.path.exists('Data'): os.makedirs('Data')
-if not os.path.exists('Plots'): os.makedirs('Plots')
 
 def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-3,first_step=1E-3,max_step=np.inf, min_step=0.,Print6=True,load=True):
   """'solve_ivp_' wrapped the fortran code 

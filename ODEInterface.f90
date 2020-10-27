@@ -12,7 +12,6 @@ USE rk108FeaginMod
 USE rk109LegendreMod
 USE rk1210FeaginMod
 USE rk1211PeterMod
-USE rk1412LongMod
 USE rk1412FeaginMod
 
 IMPLICIT NONE 
@@ -122,12 +121,12 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
      iterations => rk1210FeaginEachStep
    ELSE IF (SolverName=='rk1211Peter') THEN
      iterations => rk1211PeterEachStep
-   ELSE IF (SolverName=='rk1412Long') THEN
-     iterations => rk1412LongEachStep
    ELSE IF (SolverName=='rk1412Feagin') THEN
      iterations => rk1412FeaginEachStep
    ELSE
-     PRINT '(3A)', 'Error: You should choose between [rk1412Feagin,rk108Feagin,rk1210Feagin] but received [', SolverName, ']' 
+     PRINT '(3A)', 'Error: You should choose between [rk54Sharp,rk54Dormand,&
+ &rk65Dormand,rk87Dormand,rk87EnrightVerner,rk108Feagin,rk109Legendre,&
+ &rk1210Feagin,rk1211Peter,rk1412Feagin] but received [', SolverName, ']' 
    END IF
 
    ! Initialise 

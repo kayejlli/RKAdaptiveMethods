@@ -21,7 +21,7 @@ from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 ## for Palatino and other serif fonts use:
 #rc('font',**{'family':'serif','serif':['Palatino']})
-rc('text', usetex=False)
+rc('text', usetex=True)
 
 params = {'legend.fontsize': 15,'ytick.labelsize': 18, 
           'axes.labelsize' : 18, 'xtick.labelsize': 18,

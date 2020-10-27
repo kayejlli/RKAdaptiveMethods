@@ -1,18 +1,11 @@
 fortranCompiler=gfortran
 
+all: ode.so 
+
 clean:
 	rm -rf *.err *.log *.o *.mod *.a
 	rm -rf *.so *.so.dSYM
 	rm -rf *.pyc __pycache__/*.pyc
-	rm -rf rk109_21.py
-	rm -rf rk65Dormand8.py
-	rm -rf rk1412Long.py
-	rm -rf rk54Dormand7.py
-	rm -rf rk54Sharp7.py
-	rm -rf rk87EnrightVerner_13.py
-	rm -rf rk1211_31.py
-	rm -rf RK8713M.py
-
 
 Feagin:= rk108 rk1210 rk1412
 

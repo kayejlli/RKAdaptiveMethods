@@ -28,7 +28,7 @@ for i, method in enumerate(methods):
   for j, atol in enumerate(tolArray):
     rtol = atol 
     filename = 'Data/%s_%s_rtol%s_atol%s.dat' % (FileName, method, PrintExponentialBetter(rtol), PrintExponentialBetter(atol)) 
-    t, y, outDict = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-3,max_step=1.,min_step=1E-10,Print6=False) 
+    t, y, outDict, filename = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-3,max_step=1.,min_step=1E-10,Print6=False) 
     if outDict['Success']:
       scd[j] = (np.max(abs(yfinal[:14]-y[-1][:14])/abs(yfinal[:14]))) 
       mescd[j] = np.max(abs(yfinal-y[-1])/(atol + rtol*abs(yfinal))) 
@@ -36,7 +36,9 @@ for i, method in enumerate(methods):
       fcn[j] = outDict['Evaluated'] 
       n[j] = outDict['TotalSteps'] 
     else:
-      t, y, outDict = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-3,max_step=1.,min_step=1E-5,Print6=True) 
+      for name in outDict:
+        print(name, outDict[name])  
+      raise ValueError('The program did not end properly') 
     print('rtol=%s, atol=%s, scd=%5.2f, mescd=%5.2f' % (PrintExponentialBetter(rtol), PrintExponentialBetter(atol), -np.log(scd[j])/np.log(10.), -np.log(mescd[j])/np.log(10.)))  
   color = 'C%d' % (np.mod(i, 10)) 
   marker = Marker13[np.mod(i, 13)]

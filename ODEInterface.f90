@@ -93,7 +93,7 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
   REAL(KIND=8) :: time, PrintTimePassed, PrintAtTime, TimePassed, TimeStep, h, hnew, &  
   & hold
   PROCEDURE(ODEMethods), POINTER :: iterations => NULL() ! choose different solvers 
-  CHARACTER(LEN=*), PARAMETER :: screen_fmt = "(1X,'t=',F5.2,' x1=',E18.10,' y1=',E18.10,' NSTEP=',I4)"  
+  CHARACTER(LEN=*), PARAMETER :: screen_fmt = "(1X,'t=',F5.2,' x1=',E18.10,' y1=',E18.10,' NSTEP=',I5)"  
   INTEGER :: Iteration 
   
    IF (LEN(filename)>0) THEN
@@ -234,7 +234,7 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
   IF (Print6) THEN
     PRINT *, '--- ENDING ---'
     WRITE(6,screen_fmt) time, y1Array(1), y1Array(8), TotalSteps 
-    91 FORMAT(' fcn=',I5,' step=',I4,' accpt=',I4, ' rejct=',I3,' htkmax=',I4,' htkmin=',I4) 
+    91 FORMAT(' fcn=',I6,' step=',I6,' accpt=',I6, ' rejct=',I6,' htkmax=',I5,' htkmin=',I5) 
     WRITE(6,91) Evaluated, TotalSteps, Accepted, Rejected, ReachMax, ReachMin 
     PRINT '(A,E11.3,A,E11.3)', ' Maxh=', Maxh, ' UserInput=',  MaxStepSize 
     PRINT '(A,E11.3,A,E11.3)', ' Minh=', Minh, ' UserInput=',  MinStepSize 

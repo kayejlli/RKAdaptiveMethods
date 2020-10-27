@@ -14,7 +14,14 @@ git clone git@github.com:hereiskaye/RKAdaptiveMethods.git
 cd RKAdaptiveMethods
 make all
 ```
-If successful, you can not try:
+If successful, you can now try:
+```
+python3 odefortran.py 
+```
+which should generate a file "Plots/odefortran_xy.png" that looks like: 
+![Alt text](Plots/odefortran_xy_example.png?raw=true "Title")
+
+To compare these different solvers, you can run
 ```
 python3 PleiadesMethods.py
 ```
@@ -25,6 +32,9 @@ Plots/PleiadesMethods_scd_n.png
 
 which should look like 
 ![Alt text](Plots/PleiadesMethods_scd_n_example.png?raw=true "Title")
+
+
+
 
 
 

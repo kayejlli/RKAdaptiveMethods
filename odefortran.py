@@ -4,9 +4,7 @@ import sys, os
 from Common import rmrf
 from mpmath import mpf, nstr, nprint, mp
 import mpmath
-mp.dps = 50 
-# from odefortran import * 
-# solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-6, rtol=1E-7, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True) 
+mp.dps = 50 # 50 digits  
  
 IndexList = []
 for Name in ['x', 'y', 'dx', 'dy']:
@@ -14,32 +12,60 @@ for Name in ['x', 'y', 'dx', 'dy']:
     IndexList.append('%s%d' % (Name, i+1))
 
 
-def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-3,first_step=1E-3,max_step=np.inf, min_step=0.,Print6=True,load=True):
-  """'solve_ivp_' wrapped the fortran code 
+def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-3,first_step=1E-3,max_step=np.inf, min_step=0.,Print6=True,rm=False):
+  """'solve_ivp_' wrapped the fortran code ODEInterface.f90 (=>ode.so) 
+  
 
   Usage: 
+  t0, tfinal = 0., 3.
   y0 = np.array([3,3,-1,-3,2,-2,2,3,-3,2,0,0,-4,4,0,0,0,0,0,1.75,-1.5,0,0,0,-1.25,1,0,0])
-  solve_ivp_(0., 3., y0,method='rk1412Feagin',filename='Data/test.dat', atol=1E-6, rtol=1E-7, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True) 
+  t, y, msgDict, filename = solve_ivp_(t0, tfinal, y0,method='rk1412Feagin',filename='Data/test.dat', atol=1E-6, rtol=1E-7, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True) 
 
   t0         : initial time
   tfinal     : final time 
   y0         : initial condition
-  method     : ode solver, should be in ['rk1412Feagin'] 
-  filename   : data file, filename='' if you do not want to save it
+  method     : ode solver, should be in ['rk54Sharp','rk54Dormand','rk65Dormand','rk87Dormand','rk87EnrightVerner','rk108Feagin','rk109Legendre','rk1210Feagin','rk1211Peter','rk1412Feagin']
+  filename   : format:'Data/*.dat', filename='' if you do not want to save it
   atol       : input a float or array of np.size(y0), default value 1E-6
   rtol       : float, default value 1E-3
   first_step : float, default value 1E-3
   max_step   : float, default value np.inf 
   min_step   : float, default value 0.
   Print6     : logical, True if you want to see output on screen, default True  
+  rm         : rm the Data/*.npz even if it already exist, default False  
+
+  return
+  t0         : array of time
+  y          : array of data, IndexList=['x1','x2',....]
+  msg        : a dictionary that contain all the output 
+  filename   : Data/*.npz
+
+  more 
+  msg = {
+  'cpuTime': float # how much cpuTime is used in fortran code
+  'Minh'   : float # the min(h) used in the fortran code, h = time_step
+  'Maxh'   : float # the max(h) used in the fortran code, h = time_step
+  'Rejected'  : int # how many times the solver reject a time step 
+  'Accepted'  : int # how many times the solver accept a time step without being rejected before 
+  'Evaluated' : int # =fcn, how many times the y'=f(t,y) is Evaluated
+  'TotalSteps': int # the total number of time step (np.size(t) \\approx min(TotalSteps,5.123124E5)   
+  'ReachMax'  : int # how many times h reaches max_step, if this number is large, you may want to change max_step 
+  'ReachMin'  : int # how many times h reaches min_step, if this number is large, you may want to change min_step 
+  'Success'   : 0 or 1 # 1=succeeded, 0=the program did not reach the end 
+  }
 
   """
-  if load and os.path.isfile(filename.replace('dat', 'npz')): # load data, do not calculate
-    data = np.load(filename.replace('dat', 'npz'),allow_pickle=True)
+  if rm: # force removal 
+    rmrf(filename.replace('.dat', '.npz'))
+    rmrf(filename) 
+  if os.path.isfile(filename.replace('.dat', '.npz')): # load data, do not calculate
+    data = np.load(filename.replace('.dat', '.npz'),allow_pickle=True)
     try:
-      return data['t'], data['y'], data['msg'].item()
+      return data['t'], data['y'], data['msg'].item(), filename.replace('.dat', '.npz')
     except KeyError:
-      rmrf(filename.replace('dat', 'npz')) 
+      print('The file is probably old, removing it anyway')  
+      rmrf(filename.replace('.dat', '.npz')) 
+      rmrf(filename) 
   if np.size(atol) == 1:
     atol = np.full(np.size(y0), atol) 
   IntArray, RealArray = ode.odeinterfacemod.ode(y0,t0,tfinal,method,filename,atol,rtol,max_step,min_step,first_step,Print6)
@@ -60,12 +86,9 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
     y = data[:, 1:] 
     # print(np.shape(data), np.shape(data[0]), np.shape(data[:, 0]))   
     # print(np.shape(t), np.shape(y)) 
-    np.savez(filename.replace('dat', 'npz'), t=t, y=y, msg=Dict)  
+    np.savez(filename.replace('.dat', '.npz'), t=t, y=y, msg=Dict)  
     rmrf(filename) 
-    if load:
-      return t, y, Dict
-    else:
-      return filename.replace('dat', 'npz'), Dict  
+    return t, y, Dict, filename.replace('.dat', '.npz') 
 
 if __name__ == '__main__':
   FileName = sys.argv[0].replace('.py','')
@@ -73,17 +96,8 @@ if __name__ == '__main__':
   # from https://archimede.dm.uniba.it/~testset/report/plei.pdf 
   # ref https://archimede.dm.uniba.it/~testset/problems/plei.php
   y0 = np.array([3,3,-1,-3,2,-2,2,3,-3,2,0,0,-4,4,0,0,0,0,0,1.75,-1.5,0,0,0,-1.25,1,0,0])
-  yfinal = [0.3706139143970502,0.3237284092057233E1,-0.3222559032418324E1,0.6597091455775310,\
-  0.3425581707156584,0.1562172101400631E1,-0.7003092922212495,-0.3943437585517392E1,\
-  -0.3271380973972550E1,0.5225081843456543E1,-0.2590612434977470E1,0.1198213693392275E1,\
-  -0.2429682344935824,0.1091449240428980E1,0.3417003806314313E1,0.1354584501625501E1,\
-  -0.2590065597810775E1,0.2025053734714242E1,-0.1155815100160448E1,-0.8072988170223021,\
-  0.5952396354208710,-0.3741244961234010E1,0.3773459685750630,0.9386858869551073,\
-  0.3667922227200571,-0.3474046353808490,0.2344915448180937E1,-0.1947020434263292E1]
-  t, y, outputDict = solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-15, rtol=1E-15, first_step=1E-2, max_step=1E-3, min_step=1E-4, Print6=True, load=True) 
-  # data = np.load(filename) 
-  # t = data['t']
-  # y = data['y']
+  yfinal = np.load('DataSaved/PleiadesSolution_QP_rk1412Feagin_yfinal.npz',allow_pickle=True)['yfinal']
+  t, y, outputDict, filename = solve_ivp_(0., 3., y0, filename='Data/test.dat', atol=1E-8, rtol=1E-8, first_step=1E-2, max_step=1., min_step=1E-4, Print6=True, rm=True) 
   import pylab as plt
   import matplotlib.gridspec as gridspec
 
@@ -99,17 +113,21 @@ if __name__ == '__main__':
   ax[1].set_xlim(0., 3.)
   ax[0].set_ylim(-1, 3)
   ax[1].set_ylim(-4, 4)
+  ax[0].set_xlabel(r'$t\,[{\rm s}]$') 
+  ax[1].set_xlabel(r'$t\,[{\rm s}]$') 
+  ax[0].set_ylabel(r'$x_1$') 
+  ax[1].set_ylabel(r'$y_1$') 
+
   ax[2].plot(y[:, IndexList.index('x1')], y[:, IndexList.index('y1')], 'rx', label='p1')
   ax[2].plot(y[:, IndexList.index('x3')], y[:, IndexList.index('y3')], 'bo', label='p3')
+  ax[2].set_xlabel(r'$x$')
+  ax[2].set_ylabel(r'$y$')
   ax[2].set_xlim(-1, 3)
   ax[2].set_ylim(0, 4)
   ax[2].legend(loc='best')
-  plt.show()
-  #fig.savefig('Plots/%s_xy.png' % (FileName), dpi=300)
-  #print('Plots/%s_xy.png' % (FileName)) 
-  #fig.clf()
 
-
-
-
-
+  # plt.show()
+  fig.tight_layout()
+  fig.savefig('Plots/%s_xy.png' % (FileName), dpi=300)
+  print('Plots/%s_xy.png' % (FileName)) 
+  fig.clf()

@@ -1,3 +1,4 @@
+# https://archimede.dm.uniba.it/~testset/report/plei.pdf
 from odefortran import * 
 from Common import *
 from scipy.interpolate import InterpolatedUnivariateSpline as newinterp1d
@@ -20,6 +21,7 @@ yfinal = np.load('Data/PleiadesSolution_QP_rk1412Feagin_yfinal.npz',allow_pickle
 fig, ax = plt.subplots() 
 fig1, ax1 = plt.subplots() 
 figfcn, axfcn = plt.subplots() 
+fign, axn = plt.subplots() 
 figxy, axxy = plt.subplots(2)
 
 tolArray = [1E-17, 1E-16, 3E-16, 1E-15, 3E-15, 1E-14, 3E-14, 1E-13, 3E-13, 1E-12, 1E-11, 1E-10, 1E-9, 1E-8, 1E-6, 1E-5]
@@ -32,6 +34,7 @@ for i, method in enumerate(methods):
   mescd = np.full(np.size(tolArray), -1E10) 
   cpuTime = np.full(np.size(tolArray), -1E10) 
   fcn = np.full(np.size(tolArray), -1E10) 
+  n = np.full(np.size(tolArray), -1E10)
   for j, atol in enumerate(tolArray):
     rtol = atol 
     filename = 'Data/%s_%s_rtol%s_atol%s.dat' % (FileName, method, PrintExponentialBetter(rtol), PrintExponentialBetter(atol)) 
@@ -41,6 +44,7 @@ for i, method in enumerate(methods):
       mescd[j] = np.max(abs(yfinal-y[-1])/(atol + rtol*abs(yfinal))) 
       cpuTime[j] = outDict['cpuTime'] 
       fcn[j] = outDict['Evaluated'] 
+      n[j] = outDict['TotalSteps'] 
     else:
       t, y, outDict = solve_ivp_(0.,3.,y0,method=method,filename=filename,atol=atol,rtol=rtol,first_step=1E-3,max_step=1.,min_step=1E-5,Print6=True) 
     print('rtol=%s, atol=%s, scd=%5.2f, mescd=%5.2f' % (PrintExponentialBetter(rtol), PrintExponentialBetter(atol), -np.log(scd[j])/np.log(10.), -np.log(mescd[j])/np.log(10.)))  
@@ -51,13 +55,13 @@ for i, method in enumerate(methods):
       line, = axxy[0].plot(t, y[:, IndexList.index('x1')])
       color = line.get_color()
       axxy[1].plot(t, y[:, IndexList.index('y1')], color=color)
-  marker = Marker13[np.mod(13, i)]
+  marker = Marker13[np.mod(i, 13)]
   ax.loglog(tolArray, scd, label=method, marker=marker, color=color) 
   ax1.semilogy(-np.log(scd)/np.log(10.), cpuTime, color=color, label=method, marker=marker) 
   log = lambda x: np.log(x)/np.log(10.) 
   # axfcn.loglog(fcn,  scd, label=method, marker=marker, color=color) 
   axfcn.plot(log(fcn),  log(scd), label=method, marker=marker, color=color) 
-  
+  axn.plot(log(n),  log(scd), label=method, marker=marker, color=color) 
 
 ax.axis('equal')
 addReference(ax, 1E-14, mode='x', ls='k:', alpha=0.7)
@@ -117,6 +121,14 @@ axfcn.set_ylabel(r'$\log \left\Vert \delta y/y \right\Vert_{\infty}$')
 figfcn.tight_layout()
 figfcn.savefig('Plots/%s_scd_fcn.png' % (FileName), dpi=300)
 figfcn.clf()
+ 
+axn.legend(loc=1,fontsize=10.)
+axn.set_xlabel(r'$\log({\rm N})$')
+axn.set_ylabel(r'$\log \left\Vert \delta y/y \right\Vert_{\infty}$')
+
+fign.tight_layout()
+fign.savefig('Plots/%s_scd_n.png' % (FileName), dpi=300)
+fign.clf()
  
   
 

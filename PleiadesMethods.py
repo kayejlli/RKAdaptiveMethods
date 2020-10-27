@@ -1,7 +1,6 @@
 # ref: https://archimede.dm.uniba.it/~testset/report/plei.pdf
 from odefortran import * 
 from Common import *
-from scipy.interpolate import InterpolatedUnivariateSpline as newinterp1d
 import time 
  
 start_time = time.time()

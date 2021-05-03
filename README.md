@@ -25,17 +25,17 @@ To compare these different solvers, you can run
 ```
 python3 PleiadesMethods.py
 ```
-which will takes about 72 second (on my Mac), and output a file: 
+which will takes about 72 second (on my Mac), and output two files: 
 ```
 Plots/PleiadesMethods_scd_n.png
+Plots/PleiadesMethods_scd_fcn.png
 ```
-
 which should look like 
-![Alt text](Plots/PleiadesMethods_scd_n_example.png?raw=true "Title")
-
-
-
-
+<p float="left">
+ <img src="Plots/PleiadesMethods_scd_n_example.png" width="45%" height="45%">
+ <img src="Plots/PleiadesMethods_scd_fcn.png" width="45%" height="45%">
+</p>
+where N represents the total number of steps taken during the integration, and fcn represents the number of times that y'=f(t,y) is evaluated. 
 
 
 ## Quadrupole precision:
@@ -45,6 +45,11 @@ Note that numpy does not work with quadrupole precision. The np.float128 is not 
 Therefore, if you wish to pass quadrupole precision number using f2py, the working method is saving all the number to a *.f90 file, and re-compile this using f2py, and then just exceute this program. 
 There is an example in branch "Quad". 
 
+The results from quadrupole precision are:
+<p float="left">
+ <img src="Plots/PleiadesMethods_scd_n_QP.png" width="45%" height="45%">
+ <img src="Plots/PleiadesMethods_scd_fcn_QP.png" width="45%" height="45%">
+</p>
 
 # Source and reference 
 *_raw.py are downloaded from PeterStone's website (85 digits)

@@ -27,11 +27,15 @@ SUBROUTINE OUTPUT(t, yArray, UnitNo)
   RETURN 
 END SUBROUTINE 
 
+SUBROUTINE Search(y0,rArray,thetaArray,phiArray,rHitboxInput,HitboxtolInput,aInput,SolverName,filenames,mode,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut) 
 
-SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut)
-  CHARACTER(LEN=*), INTENT(IN) :: filename, SolverName
+! SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut)
+  CHARACTER(LEN=*), INTENT(IN) :: mode, SolverName
+  CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: filenames
+  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: rArray,thetaArray,phiArray 
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0, atolInput
   REAL(KIND=8), INTENT(IN) :: t0, tfinal, rtolInput, max_h, min_h, hinit 
+  REAL(KIND=8), INTENT(IN) :: rHitboxInput,HitboxtolInput,aInput 
   INTEGER, DIMENSION(10), INTENT(OUT) :: IntegerOut
   REAL(KIND=8), DIMENSION(10), INTENT(OUT) :: RealOut 
   REAL(KIND=8) :: CPUTime0, CPUTime1 
@@ -44,6 +48,13 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   Print6 = Print6Input ! whether print out to the screen 
   MaxStepSize = max_h
   MinStepSize = min_h
+
+  ! size of the sphere and its tolerance 
+  rHitbox = rHitboxInput
+  Hitboxtol = HitboxtolInput
+
+  ! spin of the bh
+  a = aInput 
 
   ! initialise global values 
   Rejected = 0
@@ -59,6 +70,7 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   ! CALL RunANDWrite(t0,tfinal,y0,ODEMode,filename,rtolInput,test,SolverName,StepPerOrbit) 
   CALL CPU_Time(CPUTime0) 
   CALL RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit) 
+  CALL RunANDWrite(y0,rArray,thetaArray,phiArray,SolverName,filenames,mode,test,hinit)
   CALL CPU_Time(CPUTime1) 
 
   ! assign values 
@@ -82,9 +94,10 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   RETURN
 END SUBROUTINE
 
-SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit) 
+SUBROUTINE RunANDWrite(y0,rArray,thetaArray,phiArray,SolverName,filenames,mode,test,hinit)
   LOGICAL, INTENT(OUT) :: test
-  CHARACTER(LEN=*), INTENT(IN) :: filename, SolverName
+  CHARACTER(LEN=*), INTENT(IN) :: mode, SolverName
+  CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: filenames
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0
   REAL(KIND=8), INTENT(IN) :: t0, tfinal, hinit ! initial time step
   REAL(KIND=8), DIMENSION(SIZE(y0)) :: yArray, y1Array, ydotNew, ydotOld
@@ -94,14 +107,22 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
   & hold
   PROCEDURE(ODEMethods), POINTER :: iterations => NULL() ! choose different solvers 
   CHARACTER(LEN=*), PARAMETER :: screen_fmt = "(1X,'t=',F5.2,' x1=',E18.10,' y1=',E18.10,' NSTEP=',I5)"  
-  INTEGER :: Iteration 
+  INTEGER :: Iteration, i, rSize
+
+  rSize = SIZE(rArray)  
   
-   IF (LEN(filename)>0) THEN
-     OPEN(UNIT=30, FILE=filename, STATUS="REPLACE", ACTION="WRITE")
-     CLOSE(UNIT=30)
-     OPEN(UNIT=30, FILE=filename, STATUS="OLD", ACCESS="SEQUENTIAL",   &
-          ACTION="WRITE", POSITION="APPEND")
+   ! w-> new file, a-> append only
+   IF (mode.EQ.'w') THEN
+     DO i = 1, rSize 
+       OPEN(UNIT=30+i, FILE=filenames(i), STATUS="REPLACE", ACTION="WRITE")
+       CLOSE(UNIT=30+i)
+     END DO
    END IF
+   DO i = 1, rSize 
+     OPEN(UNIT=30+i, FILE=filenames(i), STATUS="OLD", ACCESS="SEQUENTIAL",&
+        ACTION="WRITE", POSITION="APPEND")
+   END DO
+
 
    IF (SolverName=='rk54Sharp') THEN
      iterations => rk54SharpEachStep
@@ -189,19 +210,27 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
        ReachMax = ReachMax + 1
      END IF
 
+
+     ! get dy/dt 
+     CALL dev(y1Array, ydotNew, test) 
+     IF (test) EXIT ! Bad value, exit the program 
+
+     CALL CheckingHitting(yArray,ydotOld,y1Array,ydotNew,filenames,Hit)  
+     IF (Hit.EQ.0) THEN
+
      time = time + hold
      TimePassed = TimePassed + hold 
      PrintTimePassed = PrintTimePassed + hold
      TotalSteps = TotalSteps + 1
-     ! get dy/dt 
-     CALL dev(y1Array, ydotNew, test) 
      ydotOld = ydotNew ! save dy/dt in case needed 
-     IF (test) EXIT ! Bad value, exit the program 
 
      ! update values
      h = hnew
      yArray = y1Array
      GoodToWrite = .False.
+
+
+
 
      IF (TimePassed.GE.TimeStep) THEN
        GoodToWrite = .True.

@@ -21,7 +21,7 @@ except IndexError:
 f90 = open(modName+'.f90', 'w')
 
 b_ = True
-if filename in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py']:
+if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py']:
   b_ = False
 
 Head = '\
@@ -182,8 +182,9 @@ ErrorAndTimeStep = "\
 \n\
   ! check if any value have went crazy (Nan or Inf)\n\
   DO i = 1, SIZE(y0)\n\
-    CALL checkNanInf(yn(i), rerun)\n\
-    IF (rerun) THEN\n\
+    ! if any value is Nan or Inf, reRun this step\n\
+    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN\n\
+      rerun = .True.\n\
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min\n\
         test = .True. ! stop the program\n\
       ELSE\n\

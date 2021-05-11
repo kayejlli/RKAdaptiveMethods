@@ -1,6 +1,8 @@
 MODULE GlobalCommonMod 
 ! This module save global common variables, and is accessiable for all subroutines
 
+USE, INTRINSIC :: IEEE_ARITHMETIC, ONLY: IEEE_IS_NORMAL
+
 IMPLICIT NONE 
 
 SAVE 

@@ -51,6 +51,28 @@ The results from quadrupole precision are:
  <img src="Plots/PleiadesMethods_scd_fcn_QP.png" width="45%" height="45%">
 </p>
 
+# How to adapt this code to your probelm 
+
+The structure of the fortran code is:
+
+The subroutines 
+
+DyDt.f90
+GlobalCommon.f90
+ODEInterface.f90
+rk108Feagin.f90
+rk109Legendre.f90
+rk1210Feagin.f90
+rk1211Peter.f90
+rk1412Feagin.f90
+rk54Dormand.f90
+rk54Sharp.f90
+rk65Dormand.f90
+rk87Dormand.f90
+rk87EnrightVerner.f90
+
+
 # Source and reference 
 *_raw.py are downloaded from PeterStone's website (85 digits)
 *.txt are downloaded from https://sce.uhcl.edu/rungekutta/ (60 digits)
+

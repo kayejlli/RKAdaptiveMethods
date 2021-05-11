@@ -344,8 +344,9 @@ SUBROUTINE rk87DormandEachStep(y0,yn,h,hnew,rerun,test)
 
   ! check if any value have went crazy (Nan or Inf)
   DO i = 1, SIZE(y0)
-    CALL checkNanInf(yn(i), rerun)
-    IF (rerun) THEN
+    ! if any value is Nan or Inf, reRun this step
+    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
+      rerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
         test = .True. ! stop the program
       ELSE

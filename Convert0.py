@@ -1,17 +1,18 @@
-from RKGeneral import Printdy, PrintOutdys
+from Python.RKGeneral import Printdy, PrintOutdys
+from Python.Common import GetFortranFloat
 import numpy as np
 import sys
-from Common import GetFortranFloat
 
-# python3 Convert0.py rk1412.py 35 12 Feagin 
 
 filename = sys.argv[1] 
 stages = int(sys.argv[2])
 order = int(sys.argv[3]) 
 
+# python3 Convert0.py rk1412.py 35 12 Feagin 
 #filename = 'rk1412.py' 
 #stages = 35
 #order = 12
+
 try:
   modName = sys.argv[4] 
 except IndexError:

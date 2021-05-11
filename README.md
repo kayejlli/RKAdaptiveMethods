@@ -19,7 +19,9 @@ If successful, you can now try:
 python3 odefortran.py 
 ```
 which should generate a file "Plots/odefortran_xy.png" that looks like: 
-![Alt text](Plots/odefortran_xy_example.png?raw=true "Title")
+<p float="left">
+ <img src="Plots/odefortran_xy_example.png" width="60%" height="60%">
+</p>
 
 To compare these different solvers, you can run
 ```
@@ -54,7 +56,9 @@ The results from quadrupole precision are:
 # How to adapt this code to your probelm 
 
 The structure of the fortran code is:
-![Alt text](Plots/Dependencies.png?raw=true "Title")
+<p float="left">
+ <img src="Plots/Dependencies.png" width="45%" height="45%">
+</p>
 
 In order to adapt this code to your problem, it is necessary to modify DyDt.f90 to your own ODE formula,
   and then create your python file which takes the initial values as input.

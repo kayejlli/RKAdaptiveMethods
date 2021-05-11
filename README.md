@@ -54,22 +54,19 @@ The results from quadrupole precision are:
 # How to adapt this code to your probelm 
 
 The structure of the fortran code is:
+![Alt text](Plots/Dependencies.png?raw=true "Title")
 
-The subroutines 
-
-DyDt.f90
-GlobalCommon.f90
-ODEInterface.f90
-rk108Feagin.f90
-rk109Legendre.f90
-rk1210Feagin.f90
-rk1211Peter.f90
-rk1412Feagin.f90
-rk54Dormand.f90
-rk54Sharp.f90
-rk65Dormand.f90
-rk87Dormand.f90
-rk87EnrightVerner.f90
+In order to adapt this code to your problem, it is necessary to modify DyDt.f90 to your own ODE formula,
+  and then create your python file which takes the initial values as input.
+If your ODE formula requires a few more inputs and outputs other than the standard t,y,dy, you will need to update all the rk*f90 as well. You could certainly modify them one by one. But if you are afraid of making mistakes, you can modify the file
+```
+Convert0.py
+```
+and then it will automatically generate rk*f90 files by running
+```
+make Solvers
+```
+Remember to update the ABSTRACT INTERFACE in GlobalCommon.f90 which should resemble your new dev() subroutine.
 
 
 # Source and reference 

@@ -149,9 +149,9 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
    ! MinStepSize = h*1D-3
    ! PRINT *, h, MaxStepSize, MinStepSize
   
-   ! CALL dev(yArray, dot
+   ! CALL dev(time,yArray, dot
    ! CALL Getdy(yArray, ydotOld, ODEMode, test, Energy, Jtot)
-   CALL dev(yArray, ydotOld, test) 
+   CALL dev(time,yArray, ydotOld, test) 
    IF (LEN(filename)>0) THEN
      CALL OUTPUT(time, yArray, 30)
    END IF
@@ -161,7 +161,7 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
      Iteration = 0
      DO ! get better time step   
        hold = h
-       CALL iterations(yArray, y1Array, h, hnew, rerun, test) 
+       CALL iterations(time,yArray, y1Array, h, hnew, rerun, test) 
        IF (test) EXIT       ! Bad value, exit the program 
        ! IF (.NOT.rerun) EXIT ! do not need to rerun 
        IF (rerun) THEN
@@ -194,7 +194,7 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
      PrintTimePassed = PrintTimePassed + hold
      TotalSteps = TotalSteps + 1
      ! get dy/dt 
-     CALL dev(y1Array, ydotNew, test) 
+     CALL dev(time,y1Array, ydotNew, test) 
      ydotOld = ydotNew ! save dy/dt in case needed 
      IF (test) EXIT ! Bad value, exit the program 
 

@@ -8,7 +8,8 @@ IMPLICIT NONE
 SAVE 
 
 ABSTRACT INTERFACE
-  SUBROUTINE ODEMethods(y0,y1,h,hnew,rerun,test)
+  SUBROUTINE ODEMethods(t,y0,y1,h,hnew,rerun,test)
+  REAL(KIND=8), INTENT(IN) :: t
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0
   REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: y1
   REAL(KIND=8), INTENT(IN) :: h

@@ -7,17 +7,9 @@ IMPLICIT NONE
 
 CONTAINS
 
-SUBROUTINE checkNanInf(test1,test) 
-  REAL(KIND=DP), INTENT(IN) :: test1 
-  LOGICAL, INTENT(INOUT) :: test
-  test = .False.
-  IF ((test1.NE.test1).OR.(test1-1.0_DP.EQ.test1)) THEN
-    test = .TRUE.
-  END IF
-  RETURN
-END SUBROUTINE checkNanInf
 
-SUBROUTINE dev(y,dy,test)
+SUBROUTINE dev(t,y,dy,test)
+  REAL(KIND=8), INTENT(IN) :: t
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y
   REAL(KIND=8), DIMENSION(SIZE(y)), INTENT(OUT) :: dy
   LOGICAL, INTENT(OUT) :: test

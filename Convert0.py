@@ -98,7 +98,8 @@ with open(filename,'r') as f:
 SubStart='\n\n\
 CONTAINS\n\
 \n\
-SUBROUTINE %sEachStep(y0,yn,h,hnew,rerun,test)\n\
+SUBROUTINE %sEachStep(t,y0,yn,h,hnew,rerun,test)\n\
+ REAL(KIND=8), INTENT(IN) :: t\n\
  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)\n\
  REAL(KIND=8), INTENT(IN) :: h ! initial step size\n\
@@ -121,9 +122,9 @@ print('  test = .False.', file=f90)
 print('  rerun = .False. ', file=f90)
 
 if error:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(y0,dy0,test)', breakNo = 6, test=True, yerr=False)
+  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True, yerr=False)
 else:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(y0,dy0,test)', breakNo = 6, test=True)
+  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True)
 
 def IntToFloat(intForm):
   raw = '%e' % (intForm)

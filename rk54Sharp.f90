@@ -65,7 +65,8 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
 
 CONTAINS
 
-SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
+SUBROUTINE rk54SharpEachStep(t,y0,yn,h,hnew,rerun,test)
+ REAL(KIND=8), INTENT(IN) :: t
  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)
  REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h ! initial step size
@@ -82,7 +83,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
   test = .False.
   rerun = .False. 
   ! use y0 to get dy0
-  CALL  dev(y0,dy0,test)
+  CALL  dev(t,y0,dy0,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -93,7 +94,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL  dev(y1,dy1,test)
+  CALL  dev(t,y1,dy1,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -104,7 +105,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL  dev(y2,dy2,test)
+  CALL  dev(t,y2,dy2,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -115,7 +116,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL  dev(y3,dy3,test)
+  CALL  dev(t,y3,dy3,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -126,7 +127,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL  dev(y4,dy4,test)
+  CALL  dev(t,y4,dy4,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -137,7 +138,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL  dev(y5,dy5,test)
+  CALL  dev(t,y5,dy5,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -148,7 +149,7 @@ SUBROUTINE rk54SharpEachStep(y0,yn,h,hnew,rerun,test)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL  dev(y6,dy6,test)
+  CALL  dev(t,y6,dy6,test)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 

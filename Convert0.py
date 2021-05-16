@@ -27,8 +27,8 @@ if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py'
 Head = '\
 MODULE %sMod\n\
 \n\
-USE GlobalCommonMod\n\
-USE DyDtMod\n\
+USE CommonMod\n\
+USE DixonEquationsMod\n\
 \n\
 IMPLICIT NONE\n\
 PRIVATE\n\
@@ -98,13 +98,16 @@ with open(filename,'r') as f:
 SubStart='\n\n\
 CONTAINS\n\
 \n\
-SUBROUTINE %sEachStep(t,y0,yn,h,hnew,rerun,test)\n\
- REAL(KIND=8), INTENT(IN) :: t\n\
+SUBROUTINE %sEachStep(y0,yn,h,hnew,rerun,test,z,j,tester,errbar)\n\
  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)\n\
  REAL(KIND=8), INTENT(IN) :: h ! initial step size\n\
  REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size\n\
  LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject\n\
+ REAL(KIND=8), DIMENSION(14), INTENT(OUT) :: z\n\
+ REAL(KIND=8), DIMENSION(39), INTENT(OUT) :: tester\n\
+ REAL(KIND=8), DIMENSION(12), INTENT(OUT) :: j\n\
+ REAL(KIND=8), DIMENSION(3), INTENT(OUT) :: errbar\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded\n\
@@ -122,9 +125,9 @@ print('  test = .False.', file=f90)
 print('  rerun = .False. ', file=f90)
 
 if error:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True, yerr=False)
+  PrintOutdys(f90, Msize=stages, devString = 'dev(y0,test,dy0,z,j,tester)', breakNo = 6, test=True, yerr=False)
 else:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True)
+  PrintOutdys(f90, Msize=stages, devString = 'dev(y0,test,dy0,z,j,tester)', breakNo = 6, test=True)
 
 def IntToFloat(intForm):
   raw = '%e' % (intForm)
@@ -194,6 +197,9 @@ ErrorAndTimeStep = "\
       RETURN\n\
     END IF\n\
   END DO\n\
+\n\
+  ! Save the error and use it to estimate the global error\n\
+  errbar(:) = yerr(2:4)\n\
 \n\
   RETURN\n\
 END SUBROUTINE\n\

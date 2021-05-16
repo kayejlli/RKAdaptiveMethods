@@ -1,7 +1,7 @@
 MODULE rk65DormandMod
 
-USE GlobalCommonMod
-USE DyDtMod
+USE CommonMod
+USE DixonEquationsMod
 
 IMPLICIT NONE
 PRIVATE
@@ -74,13 +74,16 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
 
 CONTAINS
 
-SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
- REAL(KIND=8), INTENT(IN) :: t
+SUBROUTINE rk65DormandEachStep(y0,yn,h,hnew,rerun,test,z,j,tester,errbar)
  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)
  REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h ! initial step size
  REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size
  LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject
+ REAL(KIND=8), DIMENSION(14), INTENT(OUT) :: z
+ REAL(KIND=8), DIMENSION(39), INTENT(OUT) :: tester
+ REAL(KIND=8), DIMENSION(12), INTENT(OUT) :: j
+ REAL(KIND=8), DIMENSION(3), INTENT(OUT) :: errbar
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded
@@ -92,7 +95,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
   test = .False.
   rerun = .False. 
   ! use y0 to get dy0
-  CALL  dev(t,y0,dy0,test)
+  CALL  dev(y0,test,dy0,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -103,7 +106,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL  dev(t,y1,dy1,test)
+  CALL  dev(y1,test,dy1,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -114,7 +117,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL  dev(t,y2,dy2,test)
+  CALL  dev(y2,test,dy2,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -125,7 +128,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL  dev(t,y3,dy3,test)
+  CALL  dev(y3,test,dy3,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -136,7 +139,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL  dev(t,y4,dy4,test)
+  CALL  dev(y4,test,dy4,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -147,7 +150,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL  dev(t,y5,dy5,test)
+  CALL  dev(y5,test,dy5,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -158,7 +161,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL  dev(t,y6,dy6,test)
+  CALL  dev(y6,test,dy6,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -170,7 +173,7 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL  dev(t,y7,dy7,test)
+  CALL  dev(y7,test,dy7,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -225,6 +228,9 @@ SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hnew,rerun,test)
       RETURN
     END IF
   END DO
+
+  ! Save the error and use it to estimate the global error
+  errbar(:) = yerr(2:4)
 
   RETURN
 END SUBROUTINE

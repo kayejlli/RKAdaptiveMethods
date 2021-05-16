@@ -1,7 +1,7 @@
 MODULE rk108FeaginMod
 
-USE GlobalCommonMod
-USE DyDtMod
+USE CommonMod
+USE DixonEquationsMod
 
 IMPLICIT NONE
 PRIVATE
@@ -194,13 +194,16 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
 
 CONTAINS
 
-SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
- REAL(KIND=8), INTENT(IN) :: t
+SUBROUTINE rk108FeaginEachStep(y0,yn,h,hnew,rerun,test,z,j,tester,errbar)
  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)
  REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h ! initial step size
  REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size
  LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject
+ REAL(KIND=8), DIMENSION(14), INTENT(OUT) :: z
+ REAL(KIND=8), DIMENSION(39), INTENT(OUT) :: tester
+ REAL(KIND=8), DIMENSION(12), INTENT(OUT) :: j
+ REAL(KIND=8), DIMENSION(3), INTENT(OUT) :: errbar
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded
@@ -214,7 +217,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   test = .False.
   rerun = .False. 
   ! use y0 to get dy0
-  CALL  dev(t,y0,dy0,test)
+  CALL  dev(y0,test,dy0,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -225,7 +228,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL  dev(t,y1,dy1,test)
+  CALL  dev(y1,test,dy1,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -236,7 +239,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL  dev(t,y2,dy2,test)
+  CALL  dev(y2,test,dy2,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -247,7 +250,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL  dev(t,y3,dy3,test)
+  CALL  dev(y3,test,dy3,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -258,7 +261,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL  dev(t,y4,dy4,test)
+  CALL  dev(y4,test,dy4,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -269,7 +272,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL  dev(t,y5,dy5,test)
+  CALL  dev(y5,test,dy5,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -280,7 +283,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL  dev(t,y6,dy6,test)
+  CALL  dev(y6,test,dy6,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -292,7 +295,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL  dev(t,y7,dy7,test)
+  CALL  dev(y7,test,dy7,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -304,7 +307,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   y8=y0+h*(a8_0*dy0+a8_1*dy1+a8_2*dy2+a8_3*dy3+a8_4*dy4+a8_5*dy5 + &
         &  a8_6*dy6+a8_7*dy7)
   ! use y8 to get dy8
-  CALL  dev(t,y8,dy8,test)
+  CALL  dev(y8,test,dy8,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -316,7 +319,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   y9=y0+h*(a9_0*dy0+a9_1*dy1+a9_2*dy2+a9_3*dy3+a9_4*dy4+a9_5*dy5 + &
         &  a9_6*dy6+a9_7*dy7+a9_8*dy8)
   ! use y9 to get dy9
-  CALL  dev(t,y9,dy9,test)
+  CALL  dev(y9,test,dy9,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -328,7 +331,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   y10=y0+h*(a10_0*dy0+a10_1*dy1+a10_2*dy2+a10_3*dy3+a10_4*dy4+a10_5*dy5 + &
          &  a10_6*dy6+a10_7*dy7+a10_8*dy8+a10_9*dy9)
   ! use y10 to get dy10
-  CALL  dev(t,y10,dy10,test)
+  CALL  dev(y10,test,dy10,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -340,7 +343,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   y11=y0+h*(a11_0*dy0+a11_1*dy1+a11_2*dy2+a11_3*dy3+a11_4*dy4+a11_5*dy5 + &
          &  a11_6*dy6+a11_7*dy7+a11_8*dy8+a11_9*dy9+a11_10*dy10)
   ! use y11 to get dy11
-  CALL  dev(t,y11,dy11,test)
+  CALL  dev(y11,test,dy11,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -352,7 +355,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
   y12=y0+h*(a12_0*dy0+a12_1*dy1+a12_2*dy2+a12_3*dy3+a12_4*dy4+a12_5*dy5 + &
          &  a12_6*dy6+a12_7*dy7+a12_8*dy8+a12_9*dy9+a12_10*dy10+a12_11*dy11)
   ! use y12 to get dy12
-  CALL  dev(t,y12,dy12,test)
+  CALL  dev(y12,test,dy12,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -365,7 +368,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
          &  a13_6*dy6+a13_7*dy7+a13_8*dy8+a13_9*dy9+a13_10*dy10+a13_11*dy11 + &
          &  a13_12*dy12)
   ! use y13 to get dy13
-  CALL  dev(t,y13,dy13,test)
+  CALL  dev(y13,test,dy13,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -378,7 +381,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
          &  a14_6*dy6+a14_7*dy7+a14_8*dy8+a14_9*dy9+a14_10*dy10+a14_11*dy11 + &
          &  a14_12*dy12+a14_13*dy13)
   ! use y14 to get dy14
-  CALL  dev(t,y14,dy14,test)
+  CALL  dev(y14,test,dy14,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -391,7 +394,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
          &  a15_6*dy6+a15_7*dy7+a15_8*dy8+a15_9*dy9+a15_10*dy10+a15_11*dy11 + &
          &  a15_12*dy12+a15_13*dy13+a15_14*dy14)
   ! use y15 to get dy15
-  CALL  dev(t,y15,dy15,test)
+  CALL  dev(y15,test,dy15,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -404,7 +407,7 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
          &  a16_6*dy6+a16_7*dy7+a16_8*dy8+a16_9*dy9+a16_10*dy10+a16_11*dy11 + &
          &  a16_12*dy12+a16_13*dy13+a16_14*dy14+a16_15*dy15)
   ! use y16 to get dy16
-  CALL  dev(t,y16,dy16,test)
+  CALL  dev(y16,test,dy16,z,j,tester)
   IF (test) THEN ! bad dy 
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
     hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
@@ -459,6 +462,9 @@ SUBROUTINE rk108FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
       RETURN
     END IF
   END DO
+
+  ! Save the error and use it to estimate the global error
+  errbar(:) = yerr(2:4)
 
   RETURN
 END SUBROUTINE

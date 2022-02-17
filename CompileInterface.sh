@@ -12,7 +12,14 @@ else
   # if using the library 
   LibraryName="${Library/lib/}"
   LibraryName="${LibraryName/.a/}"
-  f2py -L. -l$LibraryName -c $FortranFile -m $StaticObjectName --opt='-O3' --f90exec=$FortranCompiler > $StaticObjectName.log 2> $StaticObjectName.err;
+  if [[ $LibraryName == *"/"* ]]; then
+    LibraryName=($(echo "$LibraryName" | tr "\/" "\n"))
+    echo "-L${LibraryName[0]} -l${LibraryName[1]}"
+    f2py -L${LibraryName[0]} -l${LibraryName[1]} -c $FortranFile -m $StaticObjectName --opt='-O3' --f90exec=$FortranCompiler > $StaticObjectName.log 2> $StaticObjectName.err;
+  else
+    echo "-L. -l$LibraryName"
+    f2py -L. -l$LibraryName -c $FortranFile -m $StaticObjectName --opt='-O3' --f90exec=$FortranCompiler > $StaticObjectName.log 2> $StaticObjectName.err;
+  fi
 fi
 
 ########################################################

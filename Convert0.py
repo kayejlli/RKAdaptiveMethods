@@ -18,7 +18,7 @@ try:
 except IndexError:
   modName = filename.replace('.py','') 
 
-f90 = open(modName+'.f90', 'w')
+f90 = open('Fortran/'+modName+'.f90', 'w')
 
 b_ = True
 if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py']:

@@ -88,7 +88,7 @@ INTEGER :: i
   DO i = 1, 28
     atolInput(i) = 1D-8 
   END DO
-  rtolInput = 1D-6
+  rtolInput = 1D-7
 
   CALL ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut)
 

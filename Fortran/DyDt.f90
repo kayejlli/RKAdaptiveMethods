@@ -9,6 +9,13 @@ CONTAINS
 
 
 SUBROUTINE dev(t,y,dy,test)
+  ! Please modify this file and use your own y' = f(t,y)
+  ! t    : current time
+  ! y(n) : current y (say, position of a particle in a binary system)
+  ! dy(n) : dy/dt 
+  ! test: logical, set it to .True. if you would like to force the solver to stop right now
+  !       you may use it to detect Nan values or bad values
+
   REAL(KIND=8), INTENT(IN) :: t
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y
   REAL(KIND=8), DIMENSION(SIZE(y)), INTENT(OUT) :: dy

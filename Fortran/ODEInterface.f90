@@ -19,6 +19,7 @@ IMPLICIT NONE
 CONTAINS
 
 SUBROUTINE OUTPUT(t, yArray, UnitNo)
+  ! This subroutine is used to save the output to your file (unit=UnitNo)
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: yArray
   REAL(KIND=8), INTENT(IN) :: t
   INTEGER, INTENT(IN) :: UnitNo
@@ -29,6 +30,37 @@ END SUBROUTINE
 
 
 SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut)
+  !
+  ! dy/dt = f(t,y) where t is time and y is a n-dimensional vector 
+  !
+  !--- INPUTS
+  ! y0         : initial condition (n-dimensional vector)
+  ! t0         : initial time (float)
+  ! tfinal     : final time (float)
+  ! SolverName : ode solver, should be in ['rk54Sharp','rk54Dormand','rk65Dormand','rk87Dormand','rk87EnrightVerner','rk108Feagin','rk109Legendre','rk1210Feagin','rk1211Peter','rk1412Feagin']
+  ! filename   : format:'Data/*.dat', filename='' if you do not want to save the data file 
+  ! atolInput  : an array (n-dimensional) 
+  ! rtolInput  : float
+  ! max_h      : maximum step size (float)
+  ! min_h      : minimum step size (float)
+  ! hinit      : initial time step (float)
+  ! Print6Input : logical, True if you want to see output on screen
+  
+  !--- OUTPUTs
+  ! IntegerOut : (10-dimensional vector) with each number representing different meanings
+  !      IntegerOut(1): Rejected (how many time steps have been rejected due to time step being too large)
+  !      IntegerOut(2): Accepted (how many times the solver accept a time step without being rejected before)  
+  !      IntegerOut(3): Evaluated (how many times the y'=f(t,y) is Evaluated)  
+  !      IntegerOut(4): TotalSteps (the total number of time step (np.size(t) \\approx min(TotalSteps,5.123124E5))  
+  !      IntegerOut(5): ReachMax (how many times h reaches max_step, if this number is large, you may want to change max_step)  
+  !      IntegerOut(6): ReachMin (how many times h reaches min_step, if this number is large, you may want to change min_step)  
+  !      IntegerOut(7): Success (0 or 1 # 1=succeeded, 0=the program did not reach the end)
+  !      IntegerOut(8:10) : nothing, you can save your integers here!
+  ! RealOut    : (10-dimensional vector) 
+  !      RealOut(1): cpuTime 
+  !      RealOut(2): Minh (the minimum time step used inside the program) 
+  !      RealOut(3): Maxh (the maximum time step used inside the program)
+  !
   CHARACTER(LEN=*), INTENT(IN) :: filename, SolverName
   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0, atolInput
   REAL(KIND=8), INTENT(IN) :: t0, tfinal, rtolInput, max_h, min_h, hinit 

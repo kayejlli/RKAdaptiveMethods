@@ -43,14 +43,18 @@ which should generate a file "Plots/odef2py_xy.png" that looks like:
  <img src="Plots/odefortran_xy_example.png" width="60%" height="60%">
 </p>
 To compare these different solvers, you can run
+
 ```
 python3 PleiadesMethods.py
 ```
+
 which will takes about 72 second (on my Mac), and output two files: 
+
 ```
 Plots/PleiadesMethods_scd_n.png
 Plots/PleiadesMethods_scd_fcn.png
 ```
+
 which should look like 
 <p float="left">
  <img src="Plots/PleiadesMethods_scd_n_example.png" width="45%" height="45%">
@@ -65,14 +69,18 @@ The structure of the fortran code is:
 </p>
 Initial values, settings for the solver are all defined in Main.f90. To run the fortran code,
   simpily compile and execute it using the command:
+  
 ```
 make main
 ./main
 ```
+
 The data file "Data/test.dat" will be generated, and you can use 
+
 ```
 python3 odefortran.py 
 ```
+
 to load the data and draw a figure. It should look like the figure shown above. 
 
 

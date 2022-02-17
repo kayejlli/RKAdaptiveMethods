@@ -37,7 +37,8 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   ! y0         : initial condition (n-dimensional vector)
   ! t0         : initial time (float)
   ! tfinal     : final time (float)
-  ! SolverName : ode solver, should be in ['rk54Sharp','rk54Dormand','rk65Dormand','rk87Dormand','rk87EnrightVerner','rk108Feagin','rk109Legendre','rk1210Feagin','rk1211Peter','rk1412Feagin']
+  ! SolverName : ode solver, should be in ['rk54Sharp','rk54Dormand','rk65Dormand',
+  !       'rk87Dormand','rk87EnrightVerner','rk108Feagin','rk109Legendre','rk1210Feagin','rk1211Peter','rk1412Feagin']
   ! filename   : format:'Data/*.dat', filename='' if you do not want to save the data file 
   ! atolInput  : an array (n-dimensional) 
   ! rtolInput  : float

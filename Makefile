@@ -45,9 +45,9 @@ ode.so: Fortran/ODEInterface.f90 Fortran/libSolvers.a
 Fortran/libSolvers.a: $(Modules:%=Fortran/%.o)  
 	ar crs $@ $^
 
-
-Program:= $(Modules) ODEInterface Main
-$(Program:%=Fortran/%.o): Fortran/%.o: Fortran/%.f90
+ProgramExtra:= ODEInterface Main
+Program:= $(Modules) $(ProgramExtra) 
+$(ProgramExtra:%=Fortran/%.o): Fortran/%.o: Fortran/%.f90
 	$(fortranCompiler) -c -J Fortran -o Fortran/$*.o Fortran/$*.f90 -fPIC -O3 -fmax-errors=5 
 main: $(Program:%=Fortran/%.o) 
 	$(fortranCompiler) -o main $(Program:%=Fortran/%.o)

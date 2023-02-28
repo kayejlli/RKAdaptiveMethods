@@ -27,7 +27,7 @@ if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py'
 Head = '\
 MODULE %sMod\n\
 \n\
-USE GlobalCommonMod\n\
+USE CommonMod\n\
 USE DyDtMod\n\
 \n\
 IMPLICIT NONE\n\
@@ -110,6 +110,7 @@ SUBROUTINE %sEachStep(t,y0,yn,h,hnew,rerun,test)\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded\n\
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: ymax ! the max value among y0 and yn\n\
  REAL(KIND=8) :: err\n\
+ REAL(KIND=8), DIMENSION(15) :: sup\n\
 ' % (modName) 
 f90.write(SubStart) 
 
@@ -122,9 +123,9 @@ print('  test = .False.', file=f90)
 print('  rerun = .False. ', file=f90)
 
 if error:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True, yerr=False)
+  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test,sup)', breakNo = 6, test=True, yerr=False)
 else:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True)
+  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test,sup)', breakNo = 6, test=True)
 
 def IntToFloat(intForm):
   raw = '%e' % (intForm)
@@ -162,12 +163,12 @@ ErrorAndTimeStep = "\
   err = MAXVAL(ABS(yerr/tolh))\n\
   IF (err.GT.1.D0) THEN\n\
     rerun = .True.\n\
-    hnew = MAX(0.8D0*err**(-%s), 0.1D0)*h ! no less than factor of 0.1\n\
-    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-%s),MAX(0.8D0*err**(-%s), 0.1D0)\n\
+    hnew = MAX(0.8D0*err**(-%s), ReduceAtMost)*h ! no less than factor of ReduceAtMost\n\
+    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-%s),MAX(0.8D0*err**(-%s), ReduceAtMost)\n\
   ELSE\n\
     rerun = .False.\n\
-    hnew = MIN(5.D0, 0.8D0*err**(-%s))*h ! no more than factor of 5\n\
-    ! PRINT *, 'Increase time step by', 0.8D0*err**(-%s),MIN(5.D0,0.8D0*err**(-%s))\n\
+    hnew = MIN(IncreaseAtMost, 0.8D0*err**(-%s))*h ! no more than factor of IncreaseAtMost\n\
+    ! PRINT *, 'Increase time step by', 0.8D0*err**(-%s),MIN(IncreaseAtMost,0.8D0*err**(-%s))\n\
   END IF\n\
 \n\
   ! adjust the step\n\

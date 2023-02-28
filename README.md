@@ -124,7 +124,7 @@ However, the situation can be quite complicated sometimes, when this set up will
 In this case, you might have no choice but modifying dev(t,y,dy,test) to dev(t,y,dy,test,a,b)
   with a,b are variables either INTENT(IN) or INTENT(OUT) or INTENT(INOUT).
 You will also need to update rk*f90 as well. You can certainly modify them one by one, but this process can be quite tedious.
-There are ways to modify all of them quickly. You can modify the file
+There are ways to modify all of them quickly. You can modify the line 101, line 124 to 127 of the file
 ```
 Convert0.py
 ```

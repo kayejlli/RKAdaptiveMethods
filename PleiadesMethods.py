@@ -1,5 +1,5 @@
 # ref: https://archimede.dm.uniba.it/~testset/report/plei.pdf
-from odefortran import * 
+from odef2py import *
 from Python.Common import *
 import time 
  

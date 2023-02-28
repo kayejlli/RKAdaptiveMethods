@@ -24,11 +24,14 @@ END INTERFACE
   REAL(KIND=DP), PARAMETER :: ErrorReference = 1E-15_DP
   REAL(KIND=DP), PARAMETER :: G = 1.0_DP, c = 1.0_DP 
   REAL(KIND=DP), PARAMETER :: Pi = 3.1415926535897932384626433832795028841_DP 
+  REAL(KIND=DP), PARAMETER :: ReduceAtMost = 0.1D0 ! reduce the step size by at most 0.1
+  REAL(KIND=DP), PARAMETER :: IncreaseAtMost = 5.D0 ! increase the step size by at most 5 
   REAL(KIND=DP) :: rtol, MinStepSize, MaxStepSize  
   ! REAL(KIND=DP) :: NumberPerOrbit, hInitial, Period0, MinStepSize, MaxStepSize
   REAL(KIND=DP), DIMENSION(50) :: atol
   INTEGER :: Rejected, Accepted, Evaluated, TotalSteps, ReachMax, ReachMin 
   REAL(KIND=DP) :: Minh, Maxh 
   LOGICAL :: Print6
+
 
 END MODULE GlobalCommonMod

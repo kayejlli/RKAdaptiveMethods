@@ -46,7 +46,7 @@ To compare these different solvers, you can run
 ```
 python3 PleiadesMethods.py
 ```
-which will takes about 72 second (on my Mac), and output two files: 
+which will takes about 27 second (on my Mac), and output two files: 
 ```
 Plots/PleiadesMethods_scd_n.png
 Plots/PleiadesMethods_scd_fcn.png

@@ -1,3 +1,30 @@
+# Pleiades problem 
+
+Pleiades problem is a 7 body 2-dimensional gravitating system. At t=0, we have
+```
+y0 = [3,3,-1,-3,2,-2,2,3,-3,2,0,0,-4,4,0,0,0,0,0,1.75,-1.5,0,0,0,-1.25,1,0,0].
+```
+At the end of integration t=3, we have
+
+```
+x1 = 0.370613914397051269489224978315
+y1 = 3.237284092057233220174339294317
+x2 = -3.222559032418323532453996449476
+y2 = 0.659709145577530797766030445928
+x3 = 0.342558170715657972493772831513
+y3 = 1.562172101400631119005879554607
+x4 = -0.700309292221249490850709662482
+y4 = -3.943437585517392207634657097515
+x5 = -3.271380973972549899286832442158
+y5 = 5.225081843456544028470034390921
+x6 = -2.590612434977469291652596439235
+y6 = 1.198213693392274681315257112146
+x7 = -0.242968234493582346811280103793
+y7 = 1.091449240428979727823843859369
+```
+The solution above should be accurate within about 25-30 digits. 
+
+
 # Availble methods 
 The available methods are: 
 {'rk54Sharp', 'rk54Dormand', 'rk65Dormand', 'rk87Dormand', 'rk87EnrightVerner', 'rk108Feagin', 'rk109Legendre', 'rk1210Feagin', 'rk1211Peter', 'rk1412Long', 'rk1412Feagin'}
@@ -5,7 +32,7 @@ You have two choices: f2py (which serves as the interface between python and for
 
 ## Download
 ```
-git clone git@github.com:hereiskaye/RKAdaptiveMethods.git
+git clone git@github.com:kayejlli/RKAdaptiveMethods.git
 ```
 
 

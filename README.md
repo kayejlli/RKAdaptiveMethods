@@ -178,7 +178,7 @@ Remember to update the ABSTRACT INTERFACE in GlobalCommon.f90 which should resem
 
 
 # Source and reference 
-The Pleiades problem is from:https://archimede.dm.uniba.it/~testset/problems/plei.php although this link seems to be down now. 
+The Pleiades problem is from:[https://archimede.dm.uniba.it/~testset/problems/plei.php](https://archimede.uniba.it/~testset/report/plei.pdf) in which they provided the solution at t=3 up to 15 digits. 
 *_raw.py are downloaded from PeterStone's website (85 digits)
 *.txt are downloaded from https://sce.uhcl.edu/rungekutta/ (60 digits)
 

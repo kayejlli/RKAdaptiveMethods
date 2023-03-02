@@ -42,6 +42,7 @@ The solution above should be accurate within about 25-30 digits.
 # Availble methods 
 The available methods are: 
 {'rk54Sharp', 'rk54Dormand', 'rk65Dormand', 'rk87Dormand', 'rk87EnrightVerner', 'rk108Feagin', 'rk109Legendre', 'rk1210Feagin', 'rk1211Peter', 'rk1412Long', 'rk1412Feagin'}
+All of these methods are explicite RK methods. 
 You have two choices: f2py (which serves as the interface between python and fortran) or a pure fortran code.
 
 ## Download

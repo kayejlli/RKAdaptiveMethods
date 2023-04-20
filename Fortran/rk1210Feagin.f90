@@ -1,14 +1,17 @@
 MODULE rk1210FeaginMod
 
-USE GlobalCommonMod
-USE DyDtMod
+USE parameters
+USE routines
 
 IMPLICIT NONE
 PRIVATE
 
 !  Define access to SUBROUTINEs.
 
-PUBLIC :: rk1210FeaginEachStep
+PUBLIC :: rk1210Feagin
+
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
 ! THE COEFFICIENTS OF RK12(10) TO 60 DIGITS
 ! using the notation of Fehlberg, Bettis, Horn, et alia
 
@@ -370,22 +373,29 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
  a24_22=-0.421296296296296296296296296296296296296296296296296296296296D0,&
  a24_23=-0.7875D0
 ! The estimate of the local truncation error is  (49/640)  h ( f(t1,x1)-f(t23,x23) )
-
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
 
 CONTAINS
 
-SUBROUTINE rk1210FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
- REAL(KIND=8), INTENT(IN) :: t
- REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)
- REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)
- REAL(KIND=8), INTENT(IN) :: h ! initial step size
- REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size
- LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem
+SUBROUTINE rk1210FeaginEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
+ INTEGER, INTENT(IN) :: NEQ ! Dimension of y(:)
+ REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: y0     ! y(t)
+ REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn    ! y(t+h)
+ REAL(KIND=8), INTENT(IN) :: h           ! initial step size
+ REAL(KIND=8), INTENT(OUT) :: hNew       ! new step size
+ ! PleaseTerminate=1 -> stop the program =0 -> seems good
+ ! PleaseRerun=1 -> re-run this step     =0 -> seems good
+ LOGICAL, INTENT(OUT) :: PleaseTerminate, PleaseRerun
+ REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
+ REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqnst
+ ! -------------------------------------------------------------------!
+ ! the following are intenal variables & parameters
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ymax ! the max value among y0 and yn
- REAL(KIND=8) :: err
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method
+ REAL(KIND=8) :: err, errMax
+ ! ------------------------------------------------------------------------ !
+ ! ------------------------------------------------------------------------ !
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: y1,y2,y3,y4,y5,y6,y7,y8,y9, &
                                       y10,y11,y12,y13,y14,y15,y16,y17,y18, &
                                       y19,y20,y21,y22,y23,y24
@@ -393,367 +403,317 @@ SUBROUTINE rk1210FeaginEachStep(t,y0,yn,h,hnew,rerun,test)
                                       dy9,dy10,dy11,dy12,dy13,dy14,dy15,dy16,dy17, &
                                       dy18,dy19,dy20,dy21,dy22,dy23,dy24
  INTEGER :: i
-  test = .False.
-  rerun = .False. 
+  ! To initialise the logical variables
+  PleaseTerminate = .False.
+  PleaseRerun = .False.
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
   ! use y0 to get dy0
-  CALL  dev(t,y0,dy0,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y0,C_t,C_phi,dy0)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL  dev(t,y1,dy1,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y1,C_t,C_phi,dy1)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL  dev(t,y2,dy2,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y2,C_t,C_phi,dy2)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL  dev(t,y3,dy3,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y3,C_t,C_phi,dy3)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL  dev(t,y4,dy4,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y4,C_t,C_phi,dy4)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL  dev(t,y5,dy5,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y5,C_t,C_phi,dy5)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL  dev(t,y6,dy6,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y6,C_t,C_phi,dy6)
 
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL  dev(t,y7,dy7,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y7,C_t,C_phi,dy7)
 
   y8=y0+h*(a8_0*dy0+a8_1*dy1+a8_2*dy2+a8_3*dy3+a8_4*dy4+a8_5*dy5 + &
         &  a8_6*dy6+a8_7*dy7)
   ! use y8 to get dy8
-  CALL  dev(t,y8,dy8,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y8,C_t,C_phi,dy8)
 
   y9=y0+h*(a9_0*dy0+a9_1*dy1+a9_2*dy2+a9_3*dy3+a9_4*dy4+a9_5*dy5 + &
         &  a9_6*dy6+a9_7*dy7+a9_8*dy8)
   ! use y9 to get dy9
-  CALL  dev(t,y9,dy9,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y9,C_t,C_phi,dy9)
 
   y10=y0+h*(a10_0*dy0+a10_1*dy1+a10_2*dy2+a10_3*dy3+a10_4*dy4+a10_5*dy5 + &
          &  a10_6*dy6+a10_7*dy7+a10_8*dy8+a10_9*dy9)
   ! use y10 to get dy10
-  CALL  dev(t,y10,dy10,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y10,C_t,C_phi,dy10)
 
   y11=y0+h*(a11_0*dy0+a11_1*dy1+a11_2*dy2+a11_3*dy3+a11_4*dy4+a11_5*dy5 + &
          &  a11_6*dy6+a11_7*dy7+a11_8*dy8+a11_9*dy9+a11_10*dy10)
   ! use y11 to get dy11
-  CALL  dev(t,y11,dy11,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y11,C_t,C_phi,dy11)
 
   y12=y0+h*(a12_0*dy0+a12_1*dy1+a12_2*dy2+a12_3*dy3+a12_4*dy4+a12_5*dy5 + &
          &  a12_6*dy6+a12_7*dy7+a12_8*dy8+a12_9*dy9+a12_10*dy10+a12_11*dy11)
   ! use y12 to get dy12
-  CALL  dev(t,y12,dy12,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y12,C_t,C_phi,dy12)
 
   y13=y0+h*(a13_0*dy0+a13_1*dy1+a13_2*dy2+a13_3*dy3+a13_4*dy4+a13_5*dy5 + &
          &  a13_6*dy6+a13_7*dy7+a13_8*dy8+a13_9*dy9+a13_10*dy10+a13_11*dy11 + &
          &  a13_12*dy12)
   ! use y13 to get dy13
-  CALL  dev(t,y13,dy13,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y13,C_t,C_phi,dy13)
 
   y14=y0+h*(a14_0*dy0+a14_1*dy1+a14_2*dy2+a14_3*dy3+a14_4*dy4+a14_5*dy5 + &
          &  a14_6*dy6+a14_7*dy7+a14_8*dy8+a14_9*dy9+a14_10*dy10+a14_11*dy11 + &
          &  a14_12*dy12+a14_13*dy13)
   ! use y14 to get dy14
-  CALL  dev(t,y14,dy14,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y14,C_t,C_phi,dy14)
 
   y15=y0+h*(a15_0*dy0+a15_1*dy1+a15_2*dy2+a15_3*dy3+a15_4*dy4+a15_5*dy5 + &
          &  a15_6*dy6+a15_7*dy7+a15_8*dy8+a15_9*dy9+a15_10*dy10+a15_11*dy11 + &
          &  a15_12*dy12+a15_13*dy13+a15_14*dy14)
   ! use y15 to get dy15
-  CALL  dev(t,y15,dy15,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y15,C_t,C_phi,dy15)
 
   y16=y0+h*(a16_0*dy0+a16_1*dy1+a16_2*dy2+a16_3*dy3+a16_4*dy4+a16_5*dy5 + &
          &  a16_6*dy6+a16_7*dy7+a16_8*dy8+a16_9*dy9+a16_10*dy10+a16_11*dy11 + &
          &  a16_12*dy12+a16_13*dy13+a16_14*dy14+a16_15*dy15)
   ! use y16 to get dy16
-  CALL  dev(t,y16,dy16,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y16,C_t,C_phi,dy16)
 
   y17=y0+h*(a17_0*dy0+a17_1*dy1+a17_2*dy2+a17_3*dy3+a17_4*dy4+a17_5*dy5 + &
          &  a17_6*dy6+a17_7*dy7+a17_8*dy8+a17_9*dy9+a17_10*dy10+a17_11*dy11 + &
          &  a17_12*dy12+a17_13*dy13+a17_14*dy14+a17_15*dy15+a17_16*dy16)
   ! use y17 to get dy17
-  CALL  dev(t,y17,dy17,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y17,C_t,C_phi,dy17)
 
   y18=y0+h*(a18_0*dy0+a18_1*dy1+a18_2*dy2+a18_3*dy3+a18_4*dy4+a18_5*dy5 + &
          &  a18_6*dy6+a18_7*dy7+a18_8*dy8+a18_9*dy9+a18_10*dy10+a18_11*dy11 + &
          &  a18_12*dy12+a18_13*dy13+a18_14*dy14+a18_15*dy15+a18_16*dy16+a18_17*dy17)
   ! use y18 to get dy18
-  CALL  dev(t,y18,dy18,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y18,C_t,C_phi,dy18)
 
   y19=y0+h*(a19_0*dy0+a19_1*dy1+a19_2*dy2+a19_3*dy3+a19_4*dy4+a19_5*dy5 + &
          &  a19_6*dy6+a19_7*dy7+a19_8*dy8+a19_9*dy9+a19_10*dy10+a19_11*dy11 + &
          &  a19_12*dy12+a19_13*dy13+a19_14*dy14+a19_15*dy15+a19_16*dy16+a19_17*dy17 + &
          &  a19_18*dy18)
   ! use y19 to get dy19
-  CALL  dev(t,y19,dy19,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y19,C_t,C_phi,dy19)
 
   y20=y0+h*(a20_0*dy0+a20_1*dy1+a20_2*dy2+a20_3*dy3+a20_4*dy4+a20_5*dy5 + &
          &  a20_6*dy6+a20_7*dy7+a20_8*dy8+a20_9*dy9+a20_10*dy10+a20_11*dy11 + &
          &  a20_12*dy12+a20_13*dy13+a20_14*dy14+a20_15*dy15+a20_16*dy16+a20_17*dy17 + &
          &  a20_18*dy18+a20_19*dy19)
   ! use y20 to get dy20
-  CALL  dev(t,y20,dy20,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y20,C_t,C_phi,dy20)
 
   y21=y0+h*(a21_0*dy0+a21_1*dy1+a21_2*dy2+a21_3*dy3+a21_4*dy4+a21_5*dy5 + &
          &  a21_6*dy6+a21_7*dy7+a21_8*dy8+a21_9*dy9+a21_10*dy10+a21_11*dy11 + &
          &  a21_12*dy12+a21_13*dy13+a21_14*dy14+a21_15*dy15+a21_16*dy16+a21_17*dy17 + &
          &  a21_18*dy18+a21_19*dy19+a21_20*dy20)
   ! use y21 to get dy21
-  CALL  dev(t,y21,dy21,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y21,C_t,C_phi,dy21)
 
   y22=y0+h*(a22_0*dy0+a22_1*dy1+a22_2*dy2+a22_3*dy3+a22_4*dy4+a22_5*dy5 + &
          &  a22_6*dy6+a22_7*dy7+a22_8*dy8+a22_9*dy9+a22_10*dy10+a22_11*dy11 + &
          &  a22_12*dy12+a22_13*dy13+a22_14*dy14+a22_15*dy15+a22_16*dy16+a22_17*dy17 + &
          &  a22_18*dy18+a22_19*dy19+a22_20*dy20+a22_21*dy21)
   ! use y22 to get dy22
-  CALL  dev(t,y22,dy22,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y22,C_t,C_phi,dy22)
 
   y23=y0+h*(a23_0*dy0+a23_1*dy1+a23_2*dy2+a23_3*dy3+a23_4*dy4+a23_5*dy5 + &
          &  a23_6*dy6+a23_7*dy7+a23_8*dy8+a23_9*dy9+a23_10*dy10+a23_11*dy11 + &
          &  a23_12*dy12+a23_13*dy13+a23_14*dy14+a23_15*dy15+a23_16*dy16+a23_17*dy17 + &
          &  a23_18*dy18+a23_19*dy19+a23_20*dy20+a23_21*dy21+a23_22*dy22)
   ! use y23 to get dy23
-  CALL  dev(t,y23,dy23,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y23,C_t,C_phi,dy23)
 
   y24=y0+h*(a24_0*dy0+a24_1*dy1+a24_2*dy2+a24_3*dy3+a24_4*dy4+a24_5*dy5 + &
          &  a24_6*dy6+a24_7*dy7+a24_8*dy8+a24_9*dy9+a24_10*dy10+a24_11*dy11 + &
          &  a24_12*dy12+a24_13*dy13+a24_14*dy14+a24_15*dy15+a24_16*dy16+a24_17*dy17 + &
          &  a24_18*dy18+a24_19*dy19+a24_20*dy20+a24_21*dy21+a24_22*dy22+a24_23*dy23)
   ! use y24 to get dy24
-  CALL  dev(t,y24,dy24,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y24,C_t,C_phi,dy24)
 
   yn=y0+h*(b0*dy0+b1*dy1+b2*dy2+b3*dy3+b4*dy4+b5*dy5+b6*dy6+b7*dy7 + &
         &  b8*dy8+b9*dy9+b10*dy10+b11*dy11+b12*dy12+b13*dy13+b14*dy14+b15*dy15 + &
         &  b16*dy16+b17*dy17+b18*dy18+b19*dy19+b20*dy20+b21*dy21+b22*dy22+b23*dy23 + &
         &  b24*dy24)
   yerr = (4.9D1/6.4D2)*h*ABS(dy1-dy23)
-  ! Find the max value of y among this step
-  DO i = 1, SIZE(y0)
-    ymax(i) = MAX(MAX(ABS(y0(i)), ABS(yn(i))), h*ABS(dy0(i)))
-  END DO
-  tolh = rtol*ymax + atol(1:SIZE(y0)) ! atol might be a longer array
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
 
-  ! using the error to estimate the next step
-  err = MAXVAL(ABS(yerr/tolh))
+
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+  ! Find the max value of yerr
+  errMax = MAXVAL(ABS(yerr))
+  ! using the error to propose the next step
+  err = ABS(errMax/EPS)
+  ! Increase the time step or decrease it
   IF (err.GT.1.D0) THEN
-    rerun = .True.
-    hnew = MAX(0.8D0*err**(-1.D0/11.D0), ReduceAtMost)*h ! no less than factor of ReduceAtMost
-    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-1.D0/11.D0),MAX(0.8D0*err**(-1.D0/11.D0), ReduceAtMost)
+    PleaseRerun = .True.  ! the error is too large, PleaseRerun this step
+    ! ReduceAtMost is suggested to be 0.1D0 or 0.05D0
+    hNew = MAX(0.8D0*err**(-1.D0/11.D0), ReduceAtMost)*h ! no less than factor of ReduceAtMost
+    ! PRINT *, "Decrease time step by", 0.8D0*err**(-1.D0/11.D0),MAX(0.8D0*err**(-1.D0/11.D0), ReduceAtMost)
   ELSE
-    rerun = .False.
-    hnew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/11.D0))*h ! no more than factor of IncreaseAtMost
-    ! PRINT *, 'Increase time step by', 0.8D0*err**(-1.D0/11.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/11.D0))
+    PleaseRerun = .False. ! the error is fine, keep this step and move on
+    ! IncreaseAtMost is suggested to be 5.D0
+    hNew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/11.D0))*h ! no more than factor of IncreaseAtMost
+    ! PRINT *, "Increase time step by", 0.8D0*err**(-1.D0/11.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/11.D0))
   END IF
 
-  ! adjust the step
-  hnew = MAX(MIN(hnew,MaxStepSize),MinStepSize)
-  IF (rerun) THEN
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+  ! adjust the step (make sure it is bounded with MinStepSize & MaxStepSize)
+  hNew = MAX(MIN(hNew,MaxStepSize),MinStepSize)
+  IF (PleaseRerun) THEN
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
-      test = .True. ! stop the program
-    ELSE
-      hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half
+      PleaseTerminate = .True. ! stop the program as the time step cannot be reduced any further
     END IF
     RETURN
   END IF
 
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
   ! check if any value have went crazy (Nan or Inf)
-  DO i = 1, SIZE(y0)
+  DO i = 1, NEQ
     ! if any value is Nan or Inf, reRun this step
     IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
-      rerun = .True.
+      PleaseRerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
-        test = .True. ! stop the program
+        PleaseTerminate = .True. ! stop the program
       ELSE
-        hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half
+        ! hNew is likely not computated due to the presence of Nan or Inf value in yn & yerr
+        IF (.NOT.IEEE_IS_NORMAL(hNew)) THEN
+          hNew = MAX(MinStepSize,MIN(h, h*0.5D0)) ! just try to reduce it by half
+        ELSE
+          hNew = MAX(MinStepSize,MIN(hNew, h)) ! just take the smaller one
+        END IF
       END IF
       RETURN
     END IF
   END DO
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
 
+ RETURN
+END SUBROUTINE rk1210FeaginEachStep
+
+
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
+! This subroutine choose the time step based on accuracy required and suggest
+!   the next step
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
+SUBROUTINE rk1210Feagin(NEQ,X0,XN,Y0,C_t,C_phi,EPS,YN,IERR,h)
+  ! -------------------------------------------------------------------!
+  ! Solve the system of ordinary differential equations                !
+  ! -------------------------------------------------------------------!
+  INTEGER, INTENT(IN) :: NEQ ! dimension of Y0 and YN
+  REAL(KIND=8), INTENT(IN) :: X0    ! the current time (t)
+  REAL(KIND=8), INTENT(INOUT) :: XN ! the new time == X0 + time step (t+h)
+  REAL(KIND=8), INTENT(OUT) :: h    ! the time step suggested for the next step
+  REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: Y0  ! y(t)
+  REAL(KIND=8), DIMENSION(NEQ), INTENT(OUT) :: YN ! y(t+h)
+  REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
+  REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqns
+  INTEGER, INTENT(OUT) :: IERR ! the error flag 1==trouble, 0==good
+  ! -------------------------------------------------------------------!
+  ! the following are intenal variables & parameters
+  INTEGER :: ITER ! for iterations
+  REAL(KIND=8) :: hOld, hNew ! saving the time step
+  LOGICAL :: PleaseRerun, PleaseTerminate
+  ! -------------------------------------------------------------------!
+
+  ! Initialise error flag
+  IERR = 0
+  ! Initialise the time step
+  h = XN - X0
+
+  ! Iterate until the error is smaller than EPS
+  DO ITER = 1, MaxNumberOfIteration
+    ! ----------------------------------------------------------- !
+    ! Save the time step adopted (to compare with the new suggested time step)
+    hOld = h
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    ! Try to move the system forward by h and calculate the suggested time step -> hNew
+    !   YN is updated to y(t+h)
+    !   hNew is updated to the suggested time step
+    !   PleaseRerun & PleaseTerminate are updated
+    CALL rk1210FeaginEachStep(NEQ,Y0,YN,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    IF (.NOT.PleaseRerun) THEN
+      ! This solver is happy with the time step chosen
+      ! At this point, hOld==h is the time step used for y(t) -> y(t+)
+      !                hNew is the time step suggested for the next step
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    ! Now the program decide to re-run this step
+    !   update the time step to the suggested one
+    h = hNew
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    ! If this is already the last iteration, raise an error
+    !    If the solver terminate for this reason, you could increase MaxNumberOfIteration
+    IF (ITER==MaxNumberOfIteration) THEN
+      ! PRINT *, "Max iteration is reached, but the solver still gives a large error"
+      IERR = 1
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! If Nan or Inf value appears and persist even though time step has been reduced
+    IF (PleaseTerminate) THEN
+      ! PRINT *, "Serious problem happened, please terminate the program"
+      ! PRINT *, "Most likely Nan or Inf value appears but decreasing the time step does not help"
+      IERR = 2
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! If the solver is not happy with the error obtained
+    !   but the suggested time step is the same as the input time step
+    IF ((Abs(hNew-hOld)/hOld).LT.1D-13) THEN
+      ! PRINT *, "The solver is asking for re-run, but the suggested time step remains the same"
+      IERR = 3
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! If the solver is not happy with the error obtained
+    !   but the time step we used already reaches the Min time step allowed
+    IF ((Abs(hOld-MinStepSize)/MinStepSize).LT.1D-13) THEN
+      ! PRINT *, "The solver is asking for re-run, but the time step used already reaches min time step allowed"
+      IERR = 4
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+  END DO
+
+  ! ----------------------------------------------------------- !
+  ! The values are updated even if the program wants to terminate
+  ! ----------------------------------------------------------- !
+  XN = X0 + hOld ! hOld is used to forward y(t) to y(t+)
+  h = hNew       ! Save the suggested time step to h
+
+  ! ----------------------------------------------------------- !
+  ! It is recommended to terminate the program if IERR > 0
+  ! ----------------------------------------------------------- !
   RETURN
-END SUBROUTINE
+END SUBROUTINE rk1210Feagin
+
 
 END MODULE

@@ -1,14 +1,17 @@
 MODULE rk87DormandMod
 
-USE GlobalCommonMod
-USE DyDtMod
+USE parameters
+USE routines
 
 IMPLICIT NONE
 PRIVATE
 
 !  Define access to SUBROUTINEs.
 
-PUBLIC :: rk87DormandEachStep
+PUBLIC :: rk87Dormand
+
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
 ! Prince Dormand
 ! High order embedded Runge-Kutta formulae
 ! by P.J.Prince and J.R.Dormand, Journal of Computational and Applied Mathematics, vol. 7, 1981, pages 67-75.
@@ -136,176 +139,95 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
  b_10=7.94155958811272872713019541622286771314677863741958767846859D-2,&
  b_11=4.44444444444444444444444444444444444444444444444444444444444D-2,&
  b_12=0.0D0
-
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
 
 CONTAINS
 
-SUBROUTINE rk87DormandEachStep(t,y0,yn,h,hnew,rerun,test)
- REAL(KIND=8), INTENT(IN) :: t
- REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)
- REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)
- REAL(KIND=8), INTENT(IN) :: h ! initial step size
- REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size
- LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem
+SUBROUTINE rk87DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
+ INTEGER, INTENT(IN) :: NEQ ! Dimension of y(:)
+ REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: y0     ! y(t)
+ REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn    ! y(t+h)
+ REAL(KIND=8), INTENT(IN) :: h           ! initial step size
+ REAL(KIND=8), INTENT(OUT) :: hNew       ! new step size
+ ! PleaseTerminate=1 -> stop the program =0 -> seems good
+ ! PleaseRerun=1 -> re-run this step     =0 -> seems good
+ LOGICAL, INTENT(OUT) :: PleaseTerminate, PleaseRerun
+ REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
+ REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqnst
+ ! -------------------------------------------------------------------!
+ ! the following are intenal variables & parameters
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ymax ! the max value among y0 and yn
- REAL(KIND=8) :: err
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method
+ REAL(KIND=8) :: err, errMax
+ ! ------------------------------------------------------------------------ !
+ ! ------------------------------------------------------------------------ !
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: y1,y2,y3,y4,y5,y6,y7,y8,y9, &
                                       y10,y11,y12
  REAL(KIND=8), DIMENSION(SIZE(y0)) :: dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7,dy8, &
                                       dy9,dy10,dy11,dy12
  INTEGER :: i
-  test = .False.
-  rerun = .False. 
+  ! To initialise the logical variables
+  PleaseTerminate = .False.
+  PleaseRerun = .False.
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
   ! use y0 to get dy0
-  CALL  dev(t,y0,dy0,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y0,C_t,C_phi,dy0)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL  dev(t,y1,dy1,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y1,C_t,C_phi,dy1)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL  dev(t,y2,dy2,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y2,C_t,C_phi,dy2)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL  dev(t,y3,dy3,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y3,C_t,C_phi,dy3)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL  dev(t,y4,dy4,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y4,C_t,C_phi,dy4)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL  dev(t,y5,dy5,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y5,C_t,C_phi,dy5)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL  dev(t,y6,dy6,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y6,C_t,C_phi,dy6)
 
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL  dev(t,y7,dy7,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y7,C_t,C_phi,dy7)
 
   y8=y0+h*(a8_0*dy0+a8_1*dy1+a8_2*dy2+a8_3*dy3+a8_4*dy4+a8_5*dy5 + &
         &  a8_6*dy6+a8_7*dy7)
   ! use y8 to get dy8
-  CALL  dev(t,y8,dy8,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y8,C_t,C_phi,dy8)
 
   y9=y0+h*(a9_0*dy0+a9_1*dy1+a9_2*dy2+a9_3*dy3+a9_4*dy4+a9_5*dy5 + &
         &  a9_6*dy6+a9_7*dy7+a9_8*dy8)
   ! use y9 to get dy9
-  CALL  dev(t,y9,dy9,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y9,C_t,C_phi,dy9)
 
   y10=y0+h*(a10_0*dy0+a10_1*dy1+a10_2*dy2+a10_3*dy3+a10_4*dy4+a10_5*dy5 + &
          &  a10_6*dy6+a10_7*dy7+a10_8*dy8+a10_9*dy9)
   ! use y10 to get dy10
-  CALL  dev(t,y10,dy10,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y10,C_t,C_phi,dy10)
 
   y11=y0+h*(a11_0*dy0+a11_1*dy1+a11_2*dy2+a11_3*dy3+a11_4*dy4+a11_5*dy5 + &
          &  a11_6*dy6+a11_7*dy7+a11_8*dy8+a11_9*dy9+a11_10*dy10)
   ! use y11 to get dy11
-  CALL  dev(t,y11,dy11,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y11,C_t,C_phi,dy11)
 
   y12=y0+h*(a12_0*dy0+a12_1*dy1+a12_2*dy2+a12_3*dy3+a12_4*dy4+a12_5*dy5 + &
          &  a12_6*dy6+a12_7*dy7+a12_8*dy8+a12_9*dy9+a12_10*dy10+a12_11*dy11)
   ! use y12 to get dy12
-  CALL  dev(t,y12,dy12,test)
-  IF (test) THEN ! bad dy 
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program 
-    hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step 
-    rerun = .True.
-    test = .False.
-    RETURN
-  END IF
+  CALL geo_eqns(NEQ,y12,C_t,C_phi,dy12)
 
   yn=y0+h*(b0*dy0+b1*dy1+b2*dy2+b3*dy3+b4*dy4+b5*dy5+b6*dy6+b7*dy7 + &
         &  b8*dy8+b9*dy9+b10*dy10+b11*dy11+b12*dy12)
@@ -314,50 +236,172 @@ SUBROUTINE rk87DormandEachStep(t,y0,yn,h,hnew,rerun,test)
   yerr=h*((b0-b_0)*dy0+(b1-b_1)*dy1+(b2-b_2)*dy2+(b3-b_3)*dy3+(b4-b_4)*dy4 + &
        &  (b5-b_5)*dy5+(b6-b_6)*dy6+(b7-b_7)*dy7+(b8-b_8)*dy8+(b9-b_9)*dy9 + &
        &  (b10-b_10)*dy10+(b11-b_11)*dy11+(b12-b_12)*dy12)
-  ! Find the max value of y among this step
-  DO i = 1, SIZE(y0)
-    ymax(i) = MAX(MAX(ABS(y0(i)), ABS(yn(i))), h*ABS(dy0(i)))
-  END DO
-  tolh = rtol*ymax + atol(1:SIZE(y0)) ! atol might be a longer array
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
 
-  ! using the error to estimate the next step
-  err = MAXVAL(ABS(yerr/tolh))
+
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+  ! Find the max value of yerr
+  errMax = MAXVAL(ABS(yerr))
+  ! using the error to propose the next step
+  err = ABS(errMax/EPS)
+  ! Increase the time step or decrease it
   IF (err.GT.1.D0) THEN
-    rerun = .True.
-    hnew = MAX(0.8D0*err**(-1.D0/8.D0), ReduceAtMost)*h ! no less than factor of ReduceAtMost
-    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-1.D0/8.D0),MAX(0.8D0*err**(-1.D0/8.D0), ReduceAtMost)
+    PleaseRerun = .True.  ! the error is too large, PleaseRerun this step
+    ! ReduceAtMost is suggested to be 0.1D0 or 0.05D0
+    hNew = MAX(0.8D0*err**(-1.D0/8.D0), ReduceAtMost)*h ! no less than factor of ReduceAtMost
+    ! PRINT *, "Decrease time step by", 0.8D0*err**(-1.D0/8.D0),MAX(0.8D0*err**(-1.D0/8.D0), ReduceAtMost)
   ELSE
-    rerun = .False.
-    hnew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/8.D0))*h ! no more than factor of IncreaseAtMost
-    ! PRINT *, 'Increase time step by', 0.8D0*err**(-1.D0/8.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/8.D0))
+    PleaseRerun = .False. ! the error is fine, keep this step and move on
+    ! IncreaseAtMost is suggested to be 5.D0
+    hNew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/8.D0))*h ! no more than factor of IncreaseAtMost
+    ! PRINT *, "Increase time step by", 0.8D0*err**(-1.D0/8.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/8.D0))
   END IF
 
-  ! adjust the step
-  hnew = MAX(MIN(hnew,MaxStepSize),MinStepSize)
-  IF (rerun) THEN
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+  ! adjust the step (make sure it is bounded with MinStepSize & MaxStepSize)
+  hNew = MAX(MIN(hNew,MaxStepSize),MinStepSize)
+  IF (PleaseRerun) THEN
     IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
-      test = .True. ! stop the program
-    ELSE
-      hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half
+      PleaseTerminate = .True. ! stop the program as the time step cannot be reduced any further
     END IF
     RETURN
   END IF
 
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
   ! check if any value have went crazy (Nan or Inf)
-  DO i = 1, SIZE(y0)
+  DO i = 1, NEQ
     ! if any value is Nan or Inf, reRun this step
     IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
-      rerun = .True.
+      PleaseRerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
-        test = .True. ! stop the program
+        PleaseTerminate = .True. ! stop the program
       ELSE
-        hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half
+        ! hNew is likely not computated due to the presence of Nan or Inf value in yn & yerr
+        IF (.NOT.IEEE_IS_NORMAL(hNew)) THEN
+          hNew = MAX(MinStepSize,MIN(h, h*0.5D0)) ! just try to reduce it by half
+        ELSE
+          hNew = MAX(MinStepSize,MIN(hNew, h)) ! just take the smaller one
+        END IF
       END IF
       RETURN
     END IF
   END DO
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
 
+ RETURN
+END SUBROUTINE rk87DormandEachStep
+
+
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
+! This subroutine choose the time step based on accuracy required and suggest
+!   the next step
+! ------------------------------------------------------------------------ !
+! ------------------------------------------------------------------------ !
+SUBROUTINE rk87Dormand(NEQ,X0,XN,Y0,C_t,C_phi,EPS,YN,IERR,h)
+  ! -------------------------------------------------------------------!
+  ! Solve the system of ordinary differential equations                !
+  ! -------------------------------------------------------------------!
+  INTEGER, INTENT(IN) :: NEQ ! dimension of Y0 and YN
+  REAL(KIND=8), INTENT(IN) :: X0    ! the current time (t)
+  REAL(KIND=8), INTENT(INOUT) :: XN ! the new time == X0 + time step (t+h)
+  REAL(KIND=8), INTENT(OUT) :: h    ! the time step suggested for the next step
+  REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: Y0  ! y(t)
+  REAL(KIND=8), DIMENSION(NEQ), INTENT(OUT) :: YN ! y(t+h)
+  REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
+  REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqns
+  INTEGER, INTENT(OUT) :: IERR ! the error flag 1==trouble, 0==good
+  ! -------------------------------------------------------------------!
+  ! the following are intenal variables & parameters
+  INTEGER :: ITER ! for iterations
+  REAL(KIND=8) :: hOld, hNew ! saving the time step
+  LOGICAL :: PleaseRerun, PleaseTerminate
+  ! -------------------------------------------------------------------!
+
+  ! Initialise error flag
+  IERR = 0
+  ! Initialise the time step
+  h = XN - X0
+
+  ! Iterate until the error is smaller than EPS
+  DO ITER = 1, MaxNumberOfIteration
+    ! ----------------------------------------------------------- !
+    ! Save the time step adopted (to compare with the new suggested time step)
+    hOld = h
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    ! Try to move the system forward by h and calculate the suggested time step -> hNew
+    !   YN is updated to y(t+h)
+    !   hNew is updated to the suggested time step
+    !   PleaseRerun & PleaseTerminate are updated
+    CALL rk87DormandEachStep(NEQ,Y0,YN,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    IF (.NOT.PleaseRerun) THEN
+      ! This solver is happy with the time step chosen
+      ! At this point, hOld==h is the time step used for y(t) -> y(t+)
+      !                hNew is the time step suggested for the next step
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    ! Now the program decide to re-run this step
+    !   update the time step to the suggested one
+    h = hNew
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+    ! If this is already the last iteration, raise an error
+    !    If the solver terminate for this reason, you could increase MaxNumberOfIteration
+    IF (ITER==MaxNumberOfIteration) THEN
+      ! PRINT *, "Max iteration is reached, but the solver still gives a large error"
+      IERR = 1
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! If Nan or Inf value appears and persist even though time step has been reduced
+    IF (PleaseTerminate) THEN
+      ! PRINT *, "Serious problem happened, please terminate the program"
+      ! PRINT *, "Most likely Nan or Inf value appears but decreasing the time step does not help"
+      IERR = 2
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! If the solver is not happy with the error obtained
+    !   but the suggested time step is the same as the input time step
+    IF ((Abs(hNew-hOld)/hOld).LT.1D-13) THEN
+      ! PRINT *, "The solver is asking for re-run, but the suggested time step remains the same"
+      IERR = 3
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! If the solver is not happy with the error obtained
+    !   but the time step we used already reaches the Min time step allowed
+    IF ((Abs(hOld-MinStepSize)/MinStepSize).LT.1D-13) THEN
+      ! PRINT *, "The solver is asking for re-run, but the time step used already reaches min time step allowed"
+      IERR = 4
+      EXIT
+    END IF
+    ! ----------------------------------------------------------- !
+    ! ----------------------------------------------------------- !
+  END DO
+
+  ! ----------------------------------------------------------- !
+  ! The values are updated even if the program wants to terminate
+  ! ----------------------------------------------------------- !
+  XN = X0 + hOld ! hOld is used to forward y(t) to y(t+)
+  h = hNew       ! Save the suggested time step to h
+
+  ! ----------------------------------------------------------- !
+  ! It is recommended to terminate the program if IERR > 0
+  ! ----------------------------------------------------------- !
   RETURN
-END SUBROUTINE
+END SUBROUTINE rk87Dormand
+
 
 END MODULE

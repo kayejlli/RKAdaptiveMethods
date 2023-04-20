@@ -9,6 +9,16 @@ FileName = sys.argv[0].replace('.py','')
 # set inital and final values 
 y0 = np.array([3,3,-1,-3,2,-2,2,3,-3,2,0,0,-4,4,0,0,0,0,0,1.75,-1.5,0,0,0,-1.25,1,0,0])
 yfinal = np.load('DataSaved/PleiadesSolution_QP_rk1412Feagin_yfinal.npz',allow_pickle=True)['yfinal']
+print('yfinal=', yfinal)
+
+for i in range(7):
+  print('x%d = %.30f' % (i+1, yfinal[2*i]))
+  print('y%d = %.30f' % (i+1, yfinal[2*i+1]))
+for i in range(7):
+  print('dx%d/dt = %.30f' % (i+1, yfinal[14+2*i]))
+  print('dy%d/dt = %.30f' % (i+1, yfinal[14+2*i+1]))
+
+exit()
 
 fig, ax = plt.subplots() 
 fig1, ax1 = plt.subplots() 

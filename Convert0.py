@@ -18,25 +18,16 @@ try:
 except IndexError:
   modName = filename.replace('.py','') 
 
-f90 = open('Fortran/'+modName+'.f90', 'w')
 
 b_ = True
 if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py']:
   b_ = False
 
-Head = '\
-MODULE %sMod\n\
-\n\
-USE GlobalCommonMod\n\
-USE DyDtMod\n\
-\n\
-IMPLICIT NONE\n\
-PRIVATE\n\
-\n\
-!  Define access to SUBROUTINEs.\n\
-\n\
-PUBLIC :: %sEachStep\n' % (modName, modName) 
-f90.write(Head) 
+
+# the lines that will be written in between [start coefficients definitions]
+#     and [end coefficients definitions]
+coefficients_definitions = []
+
 
 error = False
 with open(filename,'r') as f:
@@ -57,29 +48,29 @@ with open(filename,'r') as f:
           i += 1				
         out = '! ' + line[i:-1]  
         # print('! ' + line[i:]) 
-        # f90.write('! ' + line[i:]) 
+        # coefficients_definitions.append('! ' + line[i:])
         if line[i] == 'k':
           if not Main:
             #print('\n'*2) 
-            f90.write('\n'*2) 
+            coefficients_definitions.append('\n'*2)
           Main = True 
           #print('REAL(KIND=8), PARAMETER, PRIVATE :: &') 
-          #f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          #coefficients_definitions.append('REAL(KIND=8), PARAMETER, PRIVATE :: &\n')
         else:
-          f90.write('! ' + line[i:])
+          coefficients_definitions.append('! ' + line[i:])
           # print('! ' + line[i:-1]) 
       elif line[0] in ['a', 'b', 'k'] and '=' in line:
         if not aStart and (line[0] == 'a'):
-          f90.write('! a[i,j] \n') 
-          f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          coefficients_definitions.append('! a[i,j] \n')
+          coefficients_definitions.append('REAL(KIND=8), PARAMETER, PRIVATE :: &\n')
           aStart = True
         if not bStart and (line[0] == 'b'):
-          f90.write('! b[i] are coefficients for nodes k[i] \n') 
-          f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          coefficients_definitions.append('! b[i] are coefficients for nodes k[i] \n')
+          coefficients_definitions.append('REAL(KIND=8), PARAMETER, PRIVATE :: &\n')
           bStart = True
         if not kStart and (line[0] == 'k'):
-          f90.write('! k[i] are the nodes \n') 
-          f90.write('REAL(KIND=8), PARAMETER, PRIVATE :: &\n') 
+          coefficients_definitions.append('! k[i] are the nodes \n')
+          coefficients_definitions.append('REAL(KIND=8), PARAMETER, PRIVATE :: &\n')
           kStart = True
         left, right = line[:-1].split('=') 
         out = '%s=%s' % (left, GetFortranFloat(right.strip(), Precision=60, fortran=True))  
@@ -93,38 +84,32 @@ with open(filename,'r') as f:
           End = '\n'
         else:
           End = ',&\n' 
-        f90.write(' %s%s' % (out, End)) 
+        coefficients_definitions.append(' %s%s' % (out, End))
        
-SubStart='\n\n\
-CONTAINS\n\
-\n\
-SUBROUTINE %sEachStep(t,y0,yn,h,hnew,rerun,test)\n\
- REAL(KIND=8), INTENT(IN) :: t\n\
- REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0     ! y(t)\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn ! y(t+h)\n\
- REAL(KIND=8), INTENT(IN) :: h ! initial step size\n\
- REAL(KIND=8), INTENT(OUT) :: hnew       ! new step size\n\
- LOGICAL, INTENT(OUT) :: test, rerun ! test=stop the program, rerun=re-run this step, reject\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: tolh ! the tolerance, determined by the problem\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded\n\
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ymax ! the max value among y0 and yn\n\
- REAL(KIND=8) :: err\n\
-' % (modName) 
-f90.write(SubStart) 
 
 breakNo = 9
-Printdy(stages,breakNo,f90,mode='y')  
-Printdy(stages,breakNo,f90,mode='dy')  
+
+# the lines that will be written in between [start construct intermediate steps]
+#     and [end construct intermediate steps]
+construct_intermediate_steps = []
+construct_intermediate_steps += Printdy(stages,breakNo,mode='y')
+construct_intermediate_steps += Printdy(stages,breakNo,mode='dy')
+
 # declare more var 
-print(' INTEGER :: i', file=f90)
-print('  test = .False.', file=f90)
-print('  rerun = .False. ', file=f90)
+construct_intermediate_steps.append(' INTEGER :: i\n')
+construct_intermediate_steps.append('  ! To initialise the logical variables\n')
+construct_intermediate_steps.append('  PleaseTerminate = .False.\n')
+construct_intermediate_steps.append('  PleaseRerun = .False.\n')
+construct_intermediate_steps.append('  ! ------------------------------------------------------------------------ !\n')
+construct_intermediate_steps.append('  ! ------------------------------------------------------------------------ !\n')
+
 
 if error:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True, yerr=False)
+  more = PrintOutdys(Msize=stages, devString = 'geo_eqns(NEQ,y0,C_t,C_phi,dy0)', breakNo = 6, test=True, yerr=False)
 else:
-  PrintOutdys(f90, Msize=stages, devString = 'dev(t,y0,dy0,test)', breakNo = 6, test=True)
+  more = PrintOutdys(Msize=stages, devString = 'geo_eqns(NEQ,y0,C_t,C_phi,dy0)', breakNo = 6, test=True)
+construct_intermediate_steps += more
+
 
 def IntToFloat(intForm):
   raw = '%e' % (intForm)
@@ -145,68 +130,44 @@ if error:
   coef = ConvertFraction(coef.replace('(','').replace(')',''))
   No1 = int(form.split('-')[0].split('x')[-1].replace(')',''))
   No2 = int(form.split('-')[1].split('x')[-1].replace(')','')) 
-  print('  yerr = %s*h*ABS(dy%d-dy%d)' % (coef, No1, No2), file=f90) 
+  construct_intermediate_steps.append('  yerr = %s*h*ABS(dy%d-dy%d)\n' % (coef, No1, No2))
+
+myExp = '1.D0/%d.D0' % (order+1)
 
 
-Exp1 = '1.D0/%d.D0' % (order+1) 
-# Exp1 = '%20.15e' % (1./(order+1))  
-# Exp1 = Exp1.replace('e', 'D') 
-ErrorAndTimeStep = "\
-  ! Find the max value of y among this step\n\
-  DO i = 1, SIZE(y0)\n\
-    ymax(i) = MAX(MAX(ABS(y0(i)), ABS(yn(i))), h*ABS(dy0(i)))\n\
-  END DO\n\
-  tolh = rtol*ymax + atol(1:SIZE(y0)) ! atol might be a longer array\n\
-\n\
-  ! using the error to estimate the next step\n\
-  err = MAXVAL(ABS(yerr/tolh))\n\
-  IF (err.GT.1.D0) THEN\n\
-    rerun = .True.\n\
-    hnew = MAX(0.8D0*err**(-%s), ReduceAtMost)*h ! no less than factor of ReduceAtMost\n\
-    ! PRINT *, 'Decrease time step by', 0.8D0*err**(-%s),MAX(0.8D0*err**(-%s), ReduceAtMost)\n\
-  ELSE\n\
-    rerun = .False.\n\
-    hnew = MIN(IncreaseAtMost, 0.8D0*err**(-%s))*h ! no more than factor of IncreaseAtMost\n\
-    ! PRINT *, 'Increase time step by', 0.8D0*err**(-%s),MIN(IncreaseAtMost,0.8D0*err**(-%s))\n\
-  END IF\n\
-\n\
-  ! adjust the step\n\
-  hnew = MAX(MIN(hnew,MaxStepSize),MinStepSize)\n\
-  IF (rerun) THEN\n\
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min\n\
-      test = .True. ! stop the program\n\
-    ELSE\n\
-      hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half\n\
-    END IF\n\
-    RETURN\n\
-  END IF\n\
-\n\
-  ! check if any value have went crazy (Nan or Inf)\n\
-  DO i = 1, SIZE(y0)\n\
-    ! if any value is Nan or Inf, reRun this step\n\
-    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN\n\
-      rerun = .True.\n\
-      IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min\n\
-        test = .True. ! stop the program\n\
-      ELSE\n\
-        hnew = MAX(MinStepSize,MIN(hnew, h*0.5D0)) ! if have not reduced, reduce to half\n\
-      END IF\n\
-      RETURN\n\
-    END IF\n\
-  END DO\n\
-\n\
-  RETURN\n\
-END SUBROUTINE\n\
-\n\
-END MODULE\n\
-" % (Exp1, Exp1, Exp1, Exp1, Exp1, Exp1) 
+f90 = open('Fortran/'+modName+'.f90', 'w')
 
-f90.write(ErrorAndTimeStep) 
+skip = False 
 
+# load the template 
+with open('rkTemplate.f90', 'r') as f:
+  linesTemplate = f.readlines()
 
-
-
-
+for line in linesTemplate:
+  ########################################
+  # inset the lines at the right place
+  if '[start coefficients definitions]' in line:
+    skip = True
+    for newline in coefficients_definitions:
+      f90.write(newline)
+    continue
+  if '[end coefficients definitions]' in line:
+    skip = False  
+    continue
+  ########################################
+  # inset the lines at the right place
+  if '[start construct intermediate steps]' in line:
+    skip = True
+    for newline in construct_intermediate_steps:
+      f90.write(newline)
+    continue
+  if '[end construct intermediate steps]' in line:
+    skip = False  
+    continue
+  # remove comments 
+  if line.lstrip()[:2] == '!#': continue 
+  if not skip:
+    exec("newline = f'%s'" % (line.rstrip()))
+    f90.write(newline + '\n')
 
 f90.close()
- 

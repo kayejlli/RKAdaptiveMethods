@@ -5,9 +5,9 @@ from Python.Common import rmrf
 from mpmath import mpf, nstr, nprint, mp
 import mpmath
 mp.dps = 50 # 50 digits  
- 
+Pi = np.pi
 
-def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-3,first_step=1E-3,max_step=np.inf, min_step=0.,Print6=True,rm=False):
+def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-3,first_step=1E-3,max_step=np.inf, min_step=0.,Print6=True,rm=False,a=0.0,rT=400.,phiMax=5*Pi):
   """'solve_ivp_' wrapped the fortran code ODEInterface.f90 (=>ode.so) 
   
 
@@ -63,7 +63,10 @@ def solve_ivp_(t0,tfinal,y0,method='rk1412Feagin',filename='',atol=1E-6,rtol=1E-
       rmrf(filename) 
   if np.size(atol) == 1:
     atol = np.full(np.size(y0), atol) 
-  IntArray, RealArray = ode.odeinterfacemod.ode(y0,t0,tfinal,method,filename,atol,rtol,max_step,min_step,first_step,Print6)
+  # create the real array 
+  RealIn = np.array([a,rT,phiMax])
+
+  IntArray, RealArray = ode.odeinterfacemod.ode(y0,t0,tfinal,method,filename,atol,rtol,max_step,min_step,first_step,Print6,RealIn)
   RealArrayIndexes = ['cpuTime', 'Minh', 'Maxh'] 
   IntArrayIndexes = ['Rejected','Accepted','Evaluated','TotalSteps','ReachMax','ReachMin', 'Success'] 
   Dict = {}

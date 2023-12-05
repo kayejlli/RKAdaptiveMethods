@@ -1,14 +1,14 @@
 MODULE rk65DormandMod
 
-USE parameters
-USE routines
+USE CommonMod
+USE DyDtMod ! Schrodinger equation
 
 IMPLICIT NONE
 PRIVATE
 
 !  Define access to SUBROUTINEs.
 
-PUBLIC :: rk65Dormand
+PUBLIC :: rk65DormandEachStep
 
 ! ------------------------------------------------------------------------ !
 ! ------------------------------------------------------------------------ !
@@ -78,26 +78,26 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
 
 CONTAINS
 
-SUBROUTINE rk65DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
- INTEGER, INTENT(IN) :: NEQ ! Dimension of y(:)
- REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: y0     ! y(t)
- REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn    ! y(t+h)
+SUBROUTINE rk65DormandEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
+ REAL(KIND=8), INTENT(IN) :: t ! current time
+ COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: y0          ! y(t)
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn  ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h           ! initial step size
  REAL(KIND=8), INTENT(OUT) :: hNew       ! new step size
  ! PleaseTerminate=1 -> stop the program =0 -> seems good
  ! PleaseRerun=1 -> re-run this step     =0 -> seems good
  LOGICAL, INTENT(OUT) :: PleaseTerminate, PleaseRerun
- REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
- REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqnst
  ! -------------------------------------------------------------------!
  ! the following are intenal variables & parameters
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method (may not in use)
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yMax ! the abs of max value of y
+ REAL(KIND=8),  DIMENSION(SIZE(y0)) :: tolh   ! the expected error
  REAL(KIND=8) :: err, errMax
  ! ------------------------------------------------------------------------ !
  ! ------------------------------------------------------------------------ !
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: y1,y2,y3,y4,y5,y6,y7
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::y1,y2,y3,y4,y5,y6,y7
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7
  INTEGER :: i
   ! To initialise the logical variables
   PleaseTerminate = .False.
@@ -105,36 +105,36 @@ SUBROUTINE rk65DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Please
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! use y0 to get dy0
-  CALL geo_eqns(NEQ,y0,C_t,C_phi,dy0)
+  CALL dydt(t,y0,dy0,PleaseRerun)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL geo_eqns(NEQ,y1,C_t,C_phi,dy1)
+  CALL dydt(t,y1,dy1,PleaseRerun)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL geo_eqns(NEQ,y2,C_t,C_phi,dy2)
+  CALL dydt(t,y2,dy2,PleaseRerun)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL geo_eqns(NEQ,y3,C_t,C_phi,dy3)
+  CALL dydt(t,y3,dy3,PleaseRerun)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL geo_eqns(NEQ,y4,C_t,C_phi,dy4)
+  CALL dydt(t,y4,dy4,PleaseRerun)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL geo_eqns(NEQ,y5,C_t,C_phi,dy5)
+  CALL dydt(t,y5,dy5,PleaseRerun)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL geo_eqns(NEQ,y6,C_t,C_phi,dy6)
+  CALL dydt(t,y6,dy6,PleaseRerun)
 
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL geo_eqns(NEQ,y7,C_t,C_phi,dy7)
+  CALL dydt(t,y7,dy7,PleaseRerun)
 
   yn=y0+h*(b0*dy0+b1*dy1+b2*dy2+b3*dy3+b4*dy4+b5*dy5+b6*dy6+b7*dy7)
   ynp=y0+h*(b_0*dy0+b_1*dy1+b_2*dy2+b_3*dy3+b_4*dy4+b_5*dy5+b_6*dy6+b_7*dy7)
@@ -147,11 +147,16 @@ SUBROUTINE rk65DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Please
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
-  ! Find the max value of yerr
-  errMax = MAXVAL(ABS(yerr))
-  ! using the error to propose the next step
-  err = ABS(errMax/EPS)
-  ! Increase the time step or decrease it
+  ! construct yMax for rtol
+  DO i = 1, SIZE(y0)
+    yMax(i) = MAX(MAX(ABS(y0(i)), ABS(yn(i))), h*ABS(dy0(i)))
+  END DO
+
+  ! ------------------------------------------------------------------------ !
+  ! now define the tol-array
+  tolh = rtol*yMax + atol(1:SIZE(y0)) ! atol might be longer
+  ! using the error to estimate the next step
+  err = MAXVAL(ABS(yerr/tolh))
   IF (err.GT.1.D0) THEN
     PleaseRerun = .True.  ! the error is too large, PleaseRerun this step
     ! ReduceAtMost is suggested to be 0.1D0 or 0.05D0
@@ -163,6 +168,9 @@ SUBROUTINE rk65DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Please
     hNew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/6.D0))*h ! no more than factor of IncreaseAtMost
     ! PRINT *, "Increase time step by", 0.8D0*err**(-1.D0/6.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/6.D0))
   END IF
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+
 
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
@@ -178,9 +186,9 @@ SUBROUTINE rk65DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Please
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! check if any value have went crazy (Nan or Inf)
-  DO i = 1, NEQ
+  DO i = 1, SIZE(y0)
     ! if any value is Nan or Inf, reRun this step
-    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
+    IF (.NOT.IEEE_IS_NORMAL(ABS(yn(i)))) THEN
       PleaseRerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
         PleaseTerminate = .True. ! stop the program
@@ -202,110 +210,4 @@ SUBROUTINE rk65DormandEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Please
 END SUBROUTINE rk65DormandEachStep
 
 
-! ------------------------------------------------------------------------ !
-! ------------------------------------------------------------------------ !
-! This subroutine choose the time step based on accuracy required and suggest
-!   the next step
-! ------------------------------------------------------------------------ !
-! ------------------------------------------------------------------------ !
-SUBROUTINE rk65Dormand(NEQ,X0,XN,Y0,C_t,C_phi,EPS,YN,IERR,h)
-  ! -------------------------------------------------------------------!
-  ! Solve the system of ordinary differential equations                !
-  ! -------------------------------------------------------------------!
-  INTEGER, INTENT(IN) :: NEQ ! dimension of Y0 and YN
-  REAL(KIND=8), INTENT(IN) :: X0    ! the current time (t)
-  REAL(KIND=8), INTENT(INOUT) :: XN ! the new time == X0 + time step (t+h)
-  REAL(KIND=8), INTENT(OUT) :: h    ! the time step suggested for the next step
-  REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: Y0  ! y(t)
-  REAL(KIND=8), DIMENSION(NEQ), INTENT(OUT) :: YN ! y(t+h)
-  REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
-  REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqns
-  INTEGER, INTENT(OUT) :: IERR ! the error flag 1==trouble, 0==good
-  ! -------------------------------------------------------------------!
-  ! the following are intenal variables & parameters
-  INTEGER :: ITER ! for iterations
-  REAL(KIND=8) :: hOld, hNew ! saving the time step
-  LOGICAL :: PleaseRerun, PleaseTerminate
-  ! -------------------------------------------------------------------!
-
-  ! Initialise error flag
-  IERR = 0
-  ! Initialise the time step
-  h = XN - X0
-
-  ! Iterate until the error is smaller than EPS
-  DO ITER = 1, MaxNumberOfIteration
-    ! ----------------------------------------------------------- !
-    ! Save the time step adopted (to compare with the new suggested time step)
-    hOld = h
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    ! Try to move the system forward by h and calculate the suggested time step -> hNew
-    !   YN is updated to y(t+h)
-    !   hNew is updated to the suggested time step
-    !   PleaseRerun & PleaseTerminate are updated
-    CALL rk65DormandEachStep(NEQ,Y0,YN,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    IF (.NOT.PleaseRerun) THEN
-      ! This solver is happy with the time step chosen
-      ! At this point, hOld==h is the time step used for y(t) -> y(t+)
-      !                hNew is the time step suggested for the next step
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    ! Now the program decide to re-run this step
-    !   update the time step to the suggested one
-    h = hNew
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    ! If this is already the last iteration, raise an error
-    !    If the solver terminate for this reason, you could increase MaxNumberOfIteration
-    IF (ITER==MaxNumberOfIteration) THEN
-      ! PRINT *, "Max iteration is reached, but the solver still gives a large error"
-      IERR = 1
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! If Nan or Inf value appears and persist even though time step has been reduced
-    IF (PleaseTerminate) THEN
-      ! PRINT *, "Serious problem happened, please terminate the program"
-      ! PRINT *, "Most likely Nan or Inf value appears but decreasing the time step does not help"
-      IERR = 2
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! If the solver is not happy with the error obtained
-    !   but the suggested time step is the same as the input time step
-    IF ((Abs(hNew-hOld)/hOld).LT.1D-13) THEN
-      ! PRINT *, "The solver is asking for re-run, but the suggested time step remains the same"
-      IERR = 3
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! If the solver is not happy with the error obtained
-    !   but the time step we used already reaches the Min time step allowed
-    IF ((Abs(hOld-MinStepSize)/MinStepSize).LT.1D-13) THEN
-      ! PRINT *, "The solver is asking for re-run, but the time step used already reaches min time step allowed"
-      IERR = 4
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-  END DO
-
-  ! ----------------------------------------------------------- !
-  ! The values are updated even if the program wants to terminate
-  ! ----------------------------------------------------------- !
-  XN = X0 + hOld ! hOld is used to forward y(t) to y(t+)
-  h = hNew       ! Save the suggested time step to h
-
-  ! ----------------------------------------------------------- !
-  ! It is recommended to terminate the program if IERR > 0
-  ! ----------------------------------------------------------- !
-  RETURN
-END SUBROUTINE rk65Dormand
-
-
-END MODULE
+END MODULE rk65DormandMod

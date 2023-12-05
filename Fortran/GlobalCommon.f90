@@ -33,5 +33,9 @@ END INTERFACE
   REAL(KIND=DP) :: Minh, Maxh 
   LOGICAL :: Print6
 
+REAL(KIND=DP) :: a ! Spin of BH
+REAL(KIND=DP) :: rT ! torus size
+REAL(KIND=DP) :: rEH ! Event horizon 
+REAL(KIND=DP) :: phiMax ! max value allowed for phi
 
 END MODULE GlobalCommonMod

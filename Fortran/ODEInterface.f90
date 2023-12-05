@@ -29,7 +29,8 @@ SUBROUTINE OUTPUT(t, yArray, UnitNo)
 END SUBROUTINE 
 
 
-SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input,IntegerOut,RealOut)
+SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,hinit,Print6Input, &
+  RealIn,IntegerOut,RealOut)
   !
   ! dy/dt = f(t,y) where t is time and y is a n-dimensional vector 
   !
@@ -46,6 +47,7 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   ! min_h      : minimum step size (float)
   ! hinit      : initial time step (float)
   ! Print6Input : logical, True if you want to see output on screen
+  ! RealIn     : real number as inputs 
   
   !--- OUTPUTs
   ! IntegerOut : (10-dimensional vector) with each number representing different meanings
@@ -63,7 +65,7 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   !      RealOut(3): Maxh (the maximum time step used inside the program)
   !
   CHARACTER(LEN=*), INTENT(IN) :: filename, SolverName
-  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0, atolInput
+  REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0, atolInput, RealIn
   REAL(KIND=8), INTENT(IN) :: t0, tfinal, rtolInput, max_h, min_h, hinit 
   INTEGER, DIMENSION(10), INTENT(OUT) :: IntegerOut
   REAL(KIND=8), DIMENSION(10), INTENT(OUT) :: RealOut 
@@ -77,6 +79,14 @@ SUBROUTINE ODE(y0,t0,tfinal,SolverName,filename,atolInput,rtolInput,max_h,min_h,
   Print6 = Print6Input ! whether print out to the screen 
   MaxStepSize = max_h
   MinStepSize = min_h
+
+  ! assign parameters 
+  a = RealIn(1) ! spin of BH
+  rT = RealIn(2) ! torus size [Rg] == [M] 
+  phiMax = RealIn(3) ! terminate when phi is too large 
+
+  ! derived quantity 
+  rEH = 1.D0 + DSqrt(1.D0 - a**2) ! event horizon size
 
   ! initialise global values 
   Rejected = 0
@@ -256,6 +266,14 @@ SUBROUTINE RunANDWrite(t0,tfinal,y0,SolverName,filename,test,hinit)
        IF (time.GE.tfinal) EXIT 
        h = tfinal - time
        IF (h<1D-15) EXIT
+     END IF
+     ! Terminate the solver when ...
+     IF (Abs(yArray(2)-rEH).LE.1E-10) THEN
+       EXIT
+     ELSE IF (yArray(2).GE.rT) THEN
+       EXIT
+     ELSE IF (yArray(4).GE.phiMax) THEN
+       EXIT
      END IF
   END DO
    

@@ -1,12 +1,9 @@
 # graphic setting
-from mpmath import mp, mpf, nstr
-mp.dps = 100 
+import mpmath
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import sys, os
-
-
 # matplotlib.style.use('default')
 
 import pylab as plt
@@ -16,6 +13,29 @@ import numpy as np
 #from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
+
+Sin = np.sin
+Cos = np.cos
+Tan = np.tan
+ArcTan = np.arctan
+ArcCos = np.arccos
+ArcSin = np.arcsin
+Tanh = np.tanh
+Cosh = np.cosh
+Sinh = np.sinh
+ArcTanh = np.arctanh
+ArcCosh = np.arccosh
+Pi = np.pi
+Abs = np.abs
+Csc = mpmath.csc
+Sec = mpmath.sec
+
+Sec = lambda x: 1/Cos(x)
+
+Cot = mpmath.cot 
+Log = np.log
+Log10 = np.log10
+
 
 
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})

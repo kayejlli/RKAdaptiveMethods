@@ -1,14 +1,14 @@
 MODULE rk109LegendreMod
 
-USE parameters
-USE routines
+USE CommonMod
+USE DyDtMod ! Schrodinger equation
 
 IMPLICIT NONE
 PRIVATE
 
 !  Define access to SUBROUTINEs.
 
-PUBLIC :: rk109Legendre
+PUBLIC :: rk109LegendreEachStep
 
 ! ------------------------------------------------------------------------ !
 ! ------------------------------------------------------------------------ !
@@ -297,30 +297,30 @@ REAL(KIND=8), PARAMETER, PRIVATE :: &
 
 CONTAINS
 
-SUBROUTINE rk109LegendreEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
- INTEGER, INTENT(IN) :: NEQ ! Dimension of y(:)
- REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: y0     ! y(t)
- REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn    ! y(t+h)
+SUBROUTINE rk109LegendreEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
+ REAL(KIND=8), INTENT(IN) :: t ! current time
+ COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: y0          ! y(t)
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn  ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h           ! initial step size
  REAL(KIND=8), INTENT(OUT) :: hNew       ! new step size
  ! PleaseTerminate=1 -> stop the program =0 -> seems good
  ! PleaseRerun=1 -> re-run this step     =0 -> seems good
  LOGICAL, INTENT(OUT) :: PleaseTerminate, PleaseRerun
- REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
- REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqnst
  ! -------------------------------------------------------------------!
  ! the following are intenal variables & parameters
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method (may not in use)
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yMax ! the abs of max value of y
+ REAL(KIND=8),  DIMENSION(SIZE(y0)) :: tolh   ! the expected error
  REAL(KIND=8) :: err, errMax
  ! ------------------------------------------------------------------------ !
  ! ------------------------------------------------------------------------ !
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: y1,y2,y3,y4,y5,y6,y7,y8,y9, &
-                                      y10,y11,y12,y13,y14,y15,y16,y17,y18, &
-                                      y19,y20
- REAL(KIND=8), DIMENSION(SIZE(y0)) :: dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7,dy8, &
-                                      dy9,dy10,dy11,dy12,dy13,dy14,dy15,dy16,dy17, &
-                                      dy18,dy19,dy20
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::y1,y2,y3,y4,y5,y6,y7,y8,y9, &
+                                        y10,y11,y12,y13,y14,y15,y16,y17,y18, &
+                                        y19,y20
+ COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7,dy8, &
+                                        dy9,dy10,dy11,dy12,dy13,dy14,dy15,dy16,dy17, &
+                                        dy18,dy19,dy20
  INTEGER :: i
   ! To initialise the logical variables
   PleaseTerminate = .False.
@@ -328,111 +328,111 @@ SUBROUTINE rk109LegendreEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Plea
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! use y0 to get dy0
-  CALL geo_eqns(NEQ,y0,C_t,C_phi,dy0)
+  CALL dydt(t,y0,dy0,PleaseRerun)
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL geo_eqns(NEQ,y1,C_t,C_phi,dy1)
+  CALL dydt(t,y1,dy1,PleaseRerun)
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL geo_eqns(NEQ,y2,C_t,C_phi,dy2)
+  CALL dydt(t,y2,dy2,PleaseRerun)
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL geo_eqns(NEQ,y3,C_t,C_phi,dy3)
+  CALL dydt(t,y3,dy3,PleaseRerun)
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL geo_eqns(NEQ,y4,C_t,C_phi,dy4)
+  CALL dydt(t,y4,dy4,PleaseRerun)
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL geo_eqns(NEQ,y5,C_t,C_phi,dy5)
+  CALL dydt(t,y5,dy5,PleaseRerun)
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL geo_eqns(NEQ,y6,C_t,C_phi,dy6)
+  CALL dydt(t,y6,dy6,PleaseRerun)
 
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL geo_eqns(NEQ,y7,C_t,C_phi,dy7)
+  CALL dydt(t,y7,dy7,PleaseRerun)
 
   y8=y0+h*(a8_0*dy0+a8_1*dy1+a8_2*dy2+a8_3*dy3+a8_4*dy4+a8_5*dy5 + &
         &  a8_6*dy6+a8_7*dy7)
   ! use y8 to get dy8
-  CALL geo_eqns(NEQ,y8,C_t,C_phi,dy8)
+  CALL dydt(t,y8,dy8,PleaseRerun)
 
   y9=y0+h*(a9_0*dy0+a9_1*dy1+a9_2*dy2+a9_3*dy3+a9_4*dy4+a9_5*dy5 + &
         &  a9_6*dy6+a9_7*dy7+a9_8*dy8)
   ! use y9 to get dy9
-  CALL geo_eqns(NEQ,y9,C_t,C_phi,dy9)
+  CALL dydt(t,y9,dy9,PleaseRerun)
 
   y10=y0+h*(a10_0*dy0+a10_1*dy1+a10_2*dy2+a10_3*dy3+a10_4*dy4+a10_5*dy5 + &
          &  a10_6*dy6+a10_7*dy7+a10_8*dy8+a10_9*dy9)
   ! use y10 to get dy10
-  CALL geo_eqns(NEQ,y10,C_t,C_phi,dy10)
+  CALL dydt(t,y10,dy10,PleaseRerun)
 
   y11=y0+h*(a11_0*dy0+a11_1*dy1+a11_2*dy2+a11_3*dy3+a11_4*dy4+a11_5*dy5 + &
          &  a11_6*dy6+a11_7*dy7+a11_8*dy8+a11_9*dy9+a11_10*dy10)
   ! use y11 to get dy11
-  CALL geo_eqns(NEQ,y11,C_t,C_phi,dy11)
+  CALL dydt(t,y11,dy11,PleaseRerun)
 
   y12=y0+h*(a12_0*dy0+a12_1*dy1+a12_2*dy2+a12_3*dy3+a12_4*dy4+a12_5*dy5 + &
          &  a12_6*dy6+a12_7*dy7+a12_8*dy8+a12_9*dy9+a12_10*dy10+a12_11*dy11)
   ! use y12 to get dy12
-  CALL geo_eqns(NEQ,y12,C_t,C_phi,dy12)
+  CALL dydt(t,y12,dy12,PleaseRerun)
 
   y13=y0+h*(a13_0*dy0+a13_1*dy1+a13_2*dy2+a13_3*dy3+a13_4*dy4+a13_5*dy5 + &
          &  a13_6*dy6+a13_7*dy7+a13_8*dy8+a13_9*dy9+a13_10*dy10+a13_11*dy11 + &
          &  a13_12*dy12)
   ! use y13 to get dy13
-  CALL geo_eqns(NEQ,y13,C_t,C_phi,dy13)
+  CALL dydt(t,y13,dy13,PleaseRerun)
 
   y14=y0+h*(a14_0*dy0+a14_1*dy1+a14_2*dy2+a14_3*dy3+a14_4*dy4+a14_5*dy5 + &
          &  a14_6*dy6+a14_7*dy7+a14_8*dy8+a14_9*dy9+a14_10*dy10+a14_11*dy11 + &
          &  a14_12*dy12+a14_13*dy13)
   ! use y14 to get dy14
-  CALL geo_eqns(NEQ,y14,C_t,C_phi,dy14)
+  CALL dydt(t,y14,dy14,PleaseRerun)
 
   y15=y0+h*(a15_0*dy0+a15_1*dy1+a15_2*dy2+a15_3*dy3+a15_4*dy4+a15_5*dy5 + &
          &  a15_6*dy6+a15_7*dy7+a15_8*dy8+a15_9*dy9+a15_10*dy10+a15_11*dy11 + &
          &  a15_12*dy12+a15_13*dy13+a15_14*dy14)
   ! use y15 to get dy15
-  CALL geo_eqns(NEQ,y15,C_t,C_phi,dy15)
+  CALL dydt(t,y15,dy15,PleaseRerun)
 
   y16=y0+h*(a16_0*dy0+a16_1*dy1+a16_2*dy2+a16_3*dy3+a16_4*dy4+a16_5*dy5 + &
          &  a16_6*dy6+a16_7*dy7+a16_8*dy8+a16_9*dy9+a16_10*dy10+a16_11*dy11 + &
          &  a16_12*dy12+a16_13*dy13+a16_14*dy14+a16_15*dy15)
   ! use y16 to get dy16
-  CALL geo_eqns(NEQ,y16,C_t,C_phi,dy16)
+  CALL dydt(t,y16,dy16,PleaseRerun)
 
   y17=y0+h*(a17_0*dy0+a17_1*dy1+a17_2*dy2+a17_3*dy3+a17_4*dy4+a17_5*dy5 + &
          &  a17_6*dy6+a17_7*dy7+a17_8*dy8+a17_9*dy9+a17_10*dy10+a17_11*dy11 + &
          &  a17_12*dy12+a17_13*dy13+a17_14*dy14+a17_15*dy15+a17_16*dy16)
   ! use y17 to get dy17
-  CALL geo_eqns(NEQ,y17,C_t,C_phi,dy17)
+  CALL dydt(t,y17,dy17,PleaseRerun)
 
   y18=y0+h*(a18_0*dy0+a18_1*dy1+a18_2*dy2+a18_3*dy3+a18_4*dy4+a18_5*dy5 + &
          &  a18_6*dy6+a18_7*dy7+a18_8*dy8+a18_9*dy9+a18_10*dy10+a18_11*dy11 + &
          &  a18_12*dy12+a18_13*dy13+a18_14*dy14+a18_15*dy15+a18_16*dy16+a18_17*dy17)
   ! use y18 to get dy18
-  CALL geo_eqns(NEQ,y18,C_t,C_phi,dy18)
+  CALL dydt(t,y18,dy18,PleaseRerun)
 
   y19=y0+h*(a19_0*dy0+a19_1*dy1+a19_2*dy2+a19_3*dy3+a19_4*dy4+a19_5*dy5 + &
          &  a19_6*dy6+a19_7*dy7+a19_8*dy8+a19_9*dy9+a19_10*dy10+a19_11*dy11 + &
          &  a19_12*dy12+a19_13*dy13+a19_14*dy14+a19_15*dy15+a19_16*dy16+a19_17*dy17 + &
          &  a19_18*dy18)
   ! use y19 to get dy19
-  CALL geo_eqns(NEQ,y19,C_t,C_phi,dy19)
+  CALL dydt(t,y19,dy19,PleaseRerun)
 
   y20=y0+h*(a20_0*dy0+a20_1*dy1+a20_2*dy2+a20_3*dy3+a20_4*dy4+a20_5*dy5 + &
          &  a20_6*dy6+a20_7*dy7+a20_8*dy8+a20_9*dy9+a20_10*dy10+a20_11*dy11 + &
          &  a20_12*dy12+a20_13*dy13+a20_14*dy14+a20_15*dy15+a20_16*dy16+a20_17*dy17 + &
          &  a20_18*dy18+a20_19*dy19)
   ! use y20 to get dy20
-  CALL geo_eqns(NEQ,y20,C_t,C_phi,dy20)
+  CALL dydt(t,y20,dy20,PleaseRerun)
 
   yn=y0+h*(b0*dy0+b1*dy1+b2*dy2+b3*dy3+b4*dy4+b5*dy5+b6*dy6+b7*dy7 + &
         &  b8*dy8+b9*dy9+b10*dy10+b11*dy11+b12*dy12+b13*dy13+b14*dy14+b15*dy15 + &
@@ -452,11 +452,16 @@ SUBROUTINE rk109LegendreEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Plea
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
-  ! Find the max value of yerr
-  errMax = MAXVAL(ABS(yerr))
-  ! using the error to propose the next step
-  err = ABS(errMax/EPS)
-  ! Increase the time step or decrease it
+  ! construct yMax for rtol
+  DO i = 1, SIZE(y0)
+    yMax(i) = MAX(MAX(ABS(y0(i)), ABS(yn(i))), h*ABS(dy0(i)))
+  END DO
+
+  ! ------------------------------------------------------------------------ !
+  ! now define the tol-array
+  tolh = rtol*yMax + atol(1:SIZE(y0)) ! atol might be longer
+  ! using the error to estimate the next step
+  err = MAXVAL(ABS(yerr/tolh))
   IF (err.GT.1.D0) THEN
     PleaseRerun = .True.  ! the error is too large, PleaseRerun this step
     ! ReduceAtMost is suggested to be 0.1D0 or 0.05D0
@@ -468,6 +473,9 @@ SUBROUTINE rk109LegendreEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Plea
     hNew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/10.D0))*h ! no more than factor of IncreaseAtMost
     ! PRINT *, "Increase time step by", 0.8D0*err**(-1.D0/10.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/10.D0))
   END IF
+  ! ------------------------------------------------------------------------ !
+  ! ------------------------------------------------------------------------ !
+
 
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
@@ -483,9 +491,9 @@ SUBROUTINE rk109LegendreEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Plea
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! check if any value have went crazy (Nan or Inf)
-  DO i = 1, NEQ
+  DO i = 1, SIZE(y0)
     ! if any value is Nan or Inf, reRun this step
-    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
+    IF (.NOT.IEEE_IS_NORMAL(ABS(yn(i)))) THEN
       PleaseRerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
         PleaseTerminate = .True. ! stop the program
@@ -507,110 +515,4 @@ SUBROUTINE rk109LegendreEachStep(NEQ,y0,yn,h,hNew,EPS,C_t,C_phi,PleaseRerun,Plea
 END SUBROUTINE rk109LegendreEachStep
 
 
-! ------------------------------------------------------------------------ !
-! ------------------------------------------------------------------------ !
-! This subroutine choose the time step based on accuracy required and suggest
-!   the next step
-! ------------------------------------------------------------------------ !
-! ------------------------------------------------------------------------ !
-SUBROUTINE rk109Legendre(NEQ,X0,XN,Y0,C_t,C_phi,EPS,YN,IERR,h)
-  ! -------------------------------------------------------------------!
-  ! Solve the system of ordinary differential equations                !
-  ! -------------------------------------------------------------------!
-  INTEGER, INTENT(IN) :: NEQ ! dimension of Y0 and YN
-  REAL(KIND=8), INTENT(IN) :: X0    ! the current time (t)
-  REAL(KIND=8), INTENT(INOUT) :: XN ! the new time == X0 + time step (t+h)
-  REAL(KIND=8), INTENT(OUT) :: h    ! the time step suggested for the next step
-  REAL(KIND=8), DIMENSION(NEQ), INTENT(IN) :: Y0  ! y(t)
-  REAL(KIND=8), DIMENSION(NEQ), INTENT(OUT) :: YN ! y(t+h)
-  REAL(KIND=8), INTENT(IN) :: EPS ! the epsilon for error
-  REAL(KIND=8), INTENT(IN) :: C_t, C_phi ! parameters needed by geo_eqns
-  INTEGER, INTENT(OUT) :: IERR ! the error flag 1==trouble, 0==good
-  ! -------------------------------------------------------------------!
-  ! the following are intenal variables & parameters
-  INTEGER :: ITER ! for iterations
-  REAL(KIND=8) :: hOld, hNew ! saving the time step
-  LOGICAL :: PleaseRerun, PleaseTerminate
-  ! -------------------------------------------------------------------!
-
-  ! Initialise error flag
-  IERR = 0
-  ! Initialise the time step
-  h = XN - X0
-
-  ! Iterate until the error is smaller than EPS
-  DO ITER = 1, MaxNumberOfIteration
-    ! ----------------------------------------------------------- !
-    ! Save the time step adopted (to compare with the new suggested time step)
-    hOld = h
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    ! Try to move the system forward by h and calculate the suggested time step -> hNew
-    !   YN is updated to y(t+h)
-    !   hNew is updated to the suggested time step
-    !   PleaseRerun & PleaseTerminate are updated
-    CALL rk109LegendreEachStep(NEQ,Y0,YN,h,hNew,EPS,C_t,C_phi,PleaseRerun,PleaseTerminate)
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    IF (.NOT.PleaseRerun) THEN
-      ! This solver is happy with the time step chosen
-      ! At this point, hOld==h is the time step used for y(t) -> y(t+)
-      !                hNew is the time step suggested for the next step
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    ! Now the program decide to re-run this step
-    !   update the time step to the suggested one
-    h = hNew
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-    ! If this is already the last iteration, raise an error
-    !    If the solver terminate for this reason, you could increase MaxNumberOfIteration
-    IF (ITER==MaxNumberOfIteration) THEN
-      ! PRINT *, "Max iteration is reached, but the solver still gives a large error"
-      IERR = 1
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! If Nan or Inf value appears and persist even though time step has been reduced
-    IF (PleaseTerminate) THEN
-      ! PRINT *, "Serious problem happened, please terminate the program"
-      ! PRINT *, "Most likely Nan or Inf value appears but decreasing the time step does not help"
-      IERR = 2
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! If the solver is not happy with the error obtained
-    !   but the suggested time step is the same as the input time step
-    IF ((Abs(hNew-hOld)/hOld).LT.1D-13) THEN
-      ! PRINT *, "The solver is asking for re-run, but the suggested time step remains the same"
-      IERR = 3
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! If the solver is not happy with the error obtained
-    !   but the time step we used already reaches the Min time step allowed
-    IF ((Abs(hOld-MinStepSize)/MinStepSize).LT.1D-13) THEN
-      ! PRINT *, "The solver is asking for re-run, but the time step used already reaches min time step allowed"
-      IERR = 4
-      EXIT
-    END IF
-    ! ----------------------------------------------------------- !
-    ! ----------------------------------------------------------- !
-  END DO
-
-  ! ----------------------------------------------------------- !
-  ! The values are updated even if the program wants to terminate
-  ! ----------------------------------------------------------- !
-  XN = X0 + hOld ! hOld is used to forward y(t) to y(t+)
-  h = hNew       ! Save the suggested time step to h
-
-  ! ----------------------------------------------------------- !
-  ! It is recommended to terminate the program if IERR > 0
-  ! ----------------------------------------------------------- !
-  RETURN
-END SUBROUTINE rk109Legendre
-
-
-END MODULE
+END MODULE rk109LegendreMod

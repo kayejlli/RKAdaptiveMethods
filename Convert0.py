@@ -23,6 +23,7 @@ b_ = True
 if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py']:
   b_ = False
 
+real = False # for complex y & dy
 
 # the lines that will be written in between [start coefficients definitions]
 #     and [end coefficients definitions]
@@ -92,8 +93,14 @@ breakNo = 9
 # the lines that will be written in between [start construct intermediate steps]
 #     and [end construct intermediate steps]
 construct_intermediate_steps = []
-construct_intermediate_steps += Printdy(stages,breakNo,mode='y')
-construct_intermediate_steps += Printdy(stages,breakNo,mode='dy')
+
+# determine if dy-s are real or not
+if real:
+  construct_intermediate_steps += Printdy(stages,breakNo,mode='y',Head=' REAL(KIND=8), DIMENSION(SIZE(y0)) ::')
+  construct_intermediate_steps += Printdy(stages,breakNo,mode='dy',Head=' REAL(KIND=8), DIMENSION(SIZE(y0)) ::')
+else:
+  construct_intermediate_steps += Printdy(stages,breakNo,mode='y',Head=' COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::')
+  construct_intermediate_steps += Printdy(stages,breakNo,mode='dy',Head=' COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::')
 
 # declare more var 
 construct_intermediate_steps.append(' INTEGER :: i\n')
@@ -105,9 +112,9 @@ construct_intermediate_steps.append('  ! ---------------------------------------
 
 
 if error:
-  more = PrintOutdys(Msize=stages, devString = 'geo_eqns(NEQ,y0,C_t,C_phi,dy0)', breakNo = 6, test=True, yerr=False)
+  more = PrintOutdys(Msize=stages, devString = 'dydt(t,y0,dy0,PleaseRerun)', breakNo = 6, test=True, yerr=False)
 else:
-  more = PrintOutdys(Msize=stages, devString = 'geo_eqns(NEQ,y0,C_t,C_phi,dy0)', breakNo = 6, test=True)
+  more = PrintOutdys(Msize=stages, devString = 'dydt(t,y0,dy0,PleaseRerun)', breakNo = 6, test=True)
 construct_intermediate_steps += more
 
 

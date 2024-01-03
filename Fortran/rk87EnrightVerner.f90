@@ -1,7 +1,7 @@
 MODULE rk87EnrightVernerMod
 
-USE CommonMod
-USE DyDtMod ! Schrodinger equation
+USE GlobalCommonMod
+USE DyDtMod
 
 IMPLICIT NONE
 PRIVATE
@@ -145,8 +145,8 @@ CONTAINS
 
 SUBROUTINE rk87EnrightVernerEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
  REAL(KIND=8), INTENT(IN) :: t ! current time
- COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: y0          ! y(t)
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn  ! y(t+h)
+ REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0          ! y(t)
+ REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn  ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h           ! initial step size
  REAL(KIND=8), INTENT(OUT) :: hNew       ! new step size
  ! PleaseTerminate=1 -> stop the program =0 -> seems good
@@ -154,17 +154,17 @@ SUBROUTINE rk87EnrightVernerEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
  LOGICAL, INTENT(OUT) :: PleaseTerminate, PleaseRerun
  ! -------------------------------------------------------------------!
  ! the following are intenal variables & parameters
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method (may not in use)
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yMax ! the abs of max value of y
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method (may not in use)
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: yMax ! the abs of max value of y
  REAL(KIND=8),  DIMENSION(SIZE(y0)) :: tolh   ! the expected error
  REAL(KIND=8) :: err, errMax
  ! ------------------------------------------------------------------------ !
  ! ------------------------------------------------------------------------ !
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::y1,y2,y3,y4,y5,y6,y7,y8,y9, &
-                                        y10,y11,y12
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) ::dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7,dy8, &
-                                        dy9,dy10,dy11,dy12
+ REAL(KIND=8), DIMENSION(SIZE(y0)) ::y1,y2,y3,y4,y5,y6,y7,y8,y9, &
+                                     y10,y11,y12
+ REAL(KIND=8), DIMENSION(SIZE(y0)) ::dy0,dy1,dy2,dy3,dy4,dy5,dy6,dy7,dy8, &
+                                     dy9,dy10,dy11,dy12
  INTEGER :: i
   ! To initialise the logical variables
   PleaseTerminate = .False.
@@ -172,61 +172,152 @@ SUBROUTINE rk87EnrightVernerEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! use y0 to get dy0
-  CALL dydt(t,y0,dy0,PleaseRerun)
+  CALL dev(t,y0,dy0,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y1=y0+h*(a1_0*dy0)
   ! use y1 to get dy1
-  CALL dydt(t,y1,dy1,PleaseRerun)
+  CALL dev(t,y1,dy1,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y2=y0+h*(a2_0*dy0+a2_1*dy1)
   ! use y2 to get dy2
-  CALL dydt(t,y2,dy2,PleaseRerun)
+  CALL dev(t,y2,dy2,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y3=y0+h*(a3_0*dy0+a3_1*dy1+a3_2*dy2)
   ! use y3 to get dy3
-  CALL dydt(t,y3,dy3,PleaseRerun)
+  CALL dev(t,y3,dy3,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y4=y0+h*(a4_0*dy0+a4_1*dy1+a4_2*dy2+a4_3*dy3)
   ! use y4 to get dy4
-  CALL dydt(t,y4,dy4,PleaseRerun)
+  CALL dev(t,y4,dy4,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y5=y0+h*(a5_0*dy0+a5_1*dy1+a5_2*dy2+a5_3*dy3+a5_4*dy4)
   ! use y5 to get dy5
-  CALL dydt(t,y5,dy5,PleaseRerun)
+  CALL dev(t,y5,dy5,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y6=y0+h*(a6_0*dy0+a6_1*dy1+a6_2*dy2+a6_3*dy3+a6_4*dy4+a6_5*dy5)
   ! use y6 to get dy6
-  CALL dydt(t,y6,dy6,PleaseRerun)
+  CALL dev(t,y6,dy6,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y7=y0+h*(a7_0*dy0+a7_1*dy1+a7_2*dy2+a7_3*dy3+a7_4*dy4+a7_5*dy5 + &
         &  a7_6*dy6)
   ! use y7 to get dy7
-  CALL dydt(t,y7,dy7,PleaseRerun)
+  CALL dev(t,y7,dy7,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y8=y0+h*(a8_0*dy0+a8_1*dy1+a8_2*dy2+a8_3*dy3+a8_4*dy4+a8_5*dy5 + &
         &  a8_6*dy6+a8_7*dy7)
   ! use y8 to get dy8
-  CALL dydt(t,y8,dy8,PleaseRerun)
+  CALL dev(t,y8,dy8,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y9=y0+h*(a9_0*dy0+a9_1*dy1+a9_2*dy2+a9_3*dy3+a9_4*dy4+a9_5*dy5 + &
         &  a9_6*dy6+a9_7*dy7+a9_8*dy8)
   ! use y9 to get dy9
-  CALL dydt(t,y9,dy9,PleaseRerun)
+  CALL dev(t,y9,dy9,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y10=y0+h*(a10_0*dy0+a10_1*dy1+a10_2*dy2+a10_3*dy3+a10_4*dy4+a10_5*dy5 + &
          &  a10_6*dy6+a10_7*dy7+a10_8*dy8+a10_9*dy9)
   ! use y10 to get dy10
-  CALL dydt(t,y10,dy10,PleaseRerun)
+  CALL dev(t,y10,dy10,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y11=y0+h*(a11_0*dy0+a11_1*dy1+a11_2*dy2+a11_3*dy3+a11_4*dy4+a11_5*dy5 + &
          &  a11_6*dy6+a11_7*dy7+a11_8*dy8+a11_9*dy9+a11_10*dy10)
   ! use y11 to get dy11
-  CALL dydt(t,y11,dy11,PleaseRerun)
+  CALL dev(t,y11,dy11,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   y12=y0+h*(a12_0*dy0+a12_1*dy1+a12_2*dy2+a12_3*dy3+a12_4*dy4+a12_5*dy5 + &
          &  a12_6*dy6+a12_7*dy7+a12_8*dy8+a12_9*dy9+a12_10*dy10+a12_11*dy11)
   ! use y12 to get dy12
-  CALL dydt(t,y12,dy12,PleaseRerun)
+  CALL dev(t,y12,dy12,PleaseTerminate)
+  IF (PleaseTerminate) THEN ! bad dy
+    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program
+      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step
+      PleaseRerun = .True.
+      PleaseTerminate = .False.
+      RETURN
+  END IF
 
   yn=y0+h*(b0*dy0+b1*dy1+b2*dy2+b3*dy3+b4*dy4+b5*dy5+b6*dy6+b7*dy7 + &
         &  b8*dy8+b9*dy9+b10*dy10+b11*dy11+b12*dy12)
@@ -258,7 +349,7 @@ SUBROUTINE rk87EnrightVernerEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
     hNew = MAX(0.8D0*err**(-1.D0/8.D0), ReduceAtMost)*h ! no less than factor of ReduceAtMost
     ! PRINT *, "Decrease time step by", 0.8D0*err**(-1.D0/8.D0),MAX(0.8D0*err**(-1.D0/8.D0), ReduceAtMost)
   ELSE
-    PleaseRerun = .False. ! the error is fine, keep this step and move on
+    ! PleaseRerun = .False. ! the error is fine, keep this step and move on
     ! IncreaseAtMost is suggested to be 5.D0
     hNew = MIN(IncreaseAtMost, 0.8D0*err**(-1.D0/8.D0))*h ! no more than factor of IncreaseAtMost
     ! PRINT *, "Increase time step by", 0.8D0*err**(-1.D0/8.D0),MIN(IncreaseAtMost,0.8D0*err**(-1.D0/8.D0))
@@ -271,29 +362,19 @@ SUBROUTINE rk87EnrightVernerEachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
   ! ------------------------------------------------------------------------ !
   ! adjust the step (make sure it is bounded with MinStepSize & MaxStepSize)
   hNew = MAX(MIN(hNew,MaxStepSize),MinStepSize)
-  IF (PleaseRerun) THEN
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
-      PleaseTerminate = .True. ! stop the program as the time step cannot be reduced any further
-    END IF
-    RETURN
-  END IF
 
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! check if any value have went crazy (Nan or Inf)
   DO i = 1, SIZE(y0)
     ! if any value is Nan or Inf, reRun this step
-    IF (.NOT.IEEE_IS_NORMAL(ABS(yn(i)))) THEN
+    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
       PleaseRerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
         PleaseTerminate = .True. ! stop the program
       ELSE
         ! hNew is likely not computated due to the presence of Nan or Inf value in yn & yerr
-        IF (.NOT.IEEE_IS_NORMAL(hNew)) THEN
-          hNew = MAX(MinStepSize,MIN(h, h*0.5D0)) ! just try to reduce it by half
-        ELSE
-          hNew = MAX(MinStepSize,MIN(hNew, h)) ! just take the smaller one
-        END IF
+        hNew = MAX(MinStepSize,MIN(hNew, h*0.5D0)) ! just take the smaller one
       END IF
       RETURN
     END IF

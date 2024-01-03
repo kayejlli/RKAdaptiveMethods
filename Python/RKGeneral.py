@@ -64,7 +64,7 @@ def BreakLines(List, joinSign, FirstLineHead, LinkSign, EndString, breakNo, spac
   return addLines
 
 
-def PrintOutdys(Msize=13, devString = 'dev(y0,dy0,test)', breakNo = 6, spaceNo=2, test=False, yerr=True): 
+def PrintOutdys(Msize=13, devString = 'dev(y0,dy0,PleaseTerminate)', breakNo = 6, spaceNo=2, test=False, yerr=True, checkbad=True): 
   # if (test), return with smaller h
   addLines = []
   spaces = ' '*spaceNo 
@@ -74,6 +74,14 @@ def PrintOutdys(Msize=13, devString = 'dev(y0,dy0,test)', breakNo = 6, spaceNo=2
       addLines += BreakLines(['a%d_%d*dy%d' % (i,j,j) for j in range(i)],'+','y%d=y0+h*('%i,' + &',')',breakNo,spaces)
     addLines.append('%s! use y%d to get dy%d' % (spaces, i, i) + '\n') 
     addLines.append(spaces + 'CALL '+ devString.replace('0', '%d' % i) + '\n')
+    if checkbad:
+      addLines.append('  IF (PleaseTerminate) THEN ! bad dy\n')
+      addLines.append('    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) RETURN ! stop the program\n')
+      addLines.append('      hnew = MAX(MIN(h/2.D0,MaxStepSize),MinStepSize) ! reduce step\n')
+      addLines.append('      PleaseRerun = .True.\n')
+      addLines.append('      PleaseTerminate = .False.\n')
+      addLines.append('      RETURN\n')
+      addLines.append('  END IF\n')
     addLines.append('\n') 
 
   # addLines.append('delta=h*(%s)' % ('+'.join('(b%d-b_%d)*dy%d' % (j, j, j) for j in range(Msize))) + '\n') 
@@ -82,7 +90,7 @@ def PrintOutdys(Msize=13, devString = 'dev(y0,dy0,test)', breakNo = 6, spaceNo=2
     addLines += BreakLines(['b_%d*dy%d' % (j,j) for j in range(Msize)],'+','ynp=y0+h*(',' + &',')',breakNo+2,spaces)
     addLines += BreakLines(['(b%d-b_%d)*dy%d' % (j, j, j) for j in range(Msize)],'+','yerr=h*(',' + &',')',int((breakNo+2)/1.5),spaces) 
   #    y5(:)=y0(:)+a51*h*dy1(:)+a52*h*dy2(:)+a53*h*dy3(:)+a54*h*dy4(:)+a55*h*dy5(:)
-  #    CALL Getdy(y5,dy6,ODEMode,rerun,Energy,Jtot)
+  #    CALL Getdy(y5,dy6,ODEMode,PleaseRerun,Energy,Jtot)
   return addLines
     
 
@@ -94,7 +102,7 @@ if __name__ == '__main__':
   breakNo = 6 # ...dy6 + & 
   addLines = []
   #f = open('RKGeneralTemp.dat', 'w')
-  addLines += PrintOutdys(Msize=13, devString = 'dev(y0,dy0,test)', breakNo = 6)
+  addLines += PrintOutdys(Msize=13, devString = 'dev(y0,dy0,PleaseTerminate)', breakNo = 6)
   #PrintOutdys(f, Msize=13, devString = 'dev(y0,dy0,h,hnew)', breakNo = 6)
   #f.close()
   #with open('RKGeneralTemp.dat', 'r') as f:

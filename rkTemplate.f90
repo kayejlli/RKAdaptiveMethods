@@ -51,8 +51,8 @@ CONTAINS
 !# {modName} --> this will be replaced by the python script to, e.g. rk108Feagin
 SUBROUTINE {modName}EachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
  REAL(KIND=8), INTENT(IN) :: t ! current time  
- COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: y0          ! y(t)
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn  ! y(t+h)
+ REAL(KIND=8), DIMENSION(:), INTENT(IN) :: y0          ! y(t)
+ REAL(KIND=8), DIMENSION(SIZE(y0)), INTENT(OUT) :: yn  ! y(t+h)
  REAL(KIND=8), INTENT(IN) :: h           ! initial step size
  REAL(KIND=8), INTENT(OUT) :: hNew       ! new step size
  ! PleaseTerminate=1 -> stop the program =0 -> seems good
@@ -60,9 +60,9 @@ SUBROUTINE {modName}EachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
  LOGICAL, INTENT(OUT) :: PleaseTerminate, PleaseRerun
  ! -------------------------------------------------------------------!
  ! the following are intenal variables & parameters 
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method (may not in use)
- COMPLEX(KIND=8), DIMENSION(SIZE(y0)) :: yMax ! the abs of max value of y
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: yerr ! the error between embedded method
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: ynp  ! the embedded method (may not in use)
+ REAL(KIND=8), DIMENSION(SIZE(y0)) :: yMax ! the abs of max value of y
  REAL(KIND=8),  DIMENSION(SIZE(y0)) :: tolh   ! the expected error 
  REAL(KIND=8) :: err, errMax
  ! ------------------------------------------------------------------------ !
@@ -108,7 +108,7 @@ SUBROUTINE {modName}EachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
     hNew = MAX(0.8D0*err**(-{myExp}), ReduceAtMost)*h ! no less than factor of ReduceAtMost
     ! PRINT *, "Decrease time step by", 0.8D0*err**(-{myExp}),MAX(0.8D0*err**(-{myExp}), ReduceAtMost)
   ELSE
-    PleaseRerun = .False. ! the error is fine, keep this step and move on
+    ! PleaseRerun = .False. ! the error is fine, keep this step and move on
     ! IncreaseAtMost is suggested to be 5.D0
     hNew = MIN(IncreaseAtMost, 0.8D0*err**(-{myExp}))*h ! no more than factor of IncreaseAtMost
     ! PRINT *, "Increase time step by", 0.8D0*err**(-{myExp}),MIN(IncreaseAtMost,0.8D0*err**(-{myExp}))
@@ -121,29 +121,19 @@ SUBROUTINE {modName}EachStep(t,y0,yn,h,hNew,PleaseRerun,PleaseTerminate)
   ! ------------------------------------------------------------------------ !
   ! adjust the step (make sure it is bounded with MinStepSize & MaxStepSize) 
   hNew = MAX(MIN(hNew,MaxStepSize),MinStepSize)
-  IF (PleaseRerun) THEN
-    IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
-      PleaseTerminate = .True. ! stop the program as the time step cannot be reduced any further 
-    END IF
-    RETURN
-  END IF
  
   ! ------------------------------------------------------------------------ !
   ! ------------------------------------------------------------------------ !
   ! check if any value have went crazy (Nan or Inf)
   DO i = 1, SIZE(y0)
     ! if any value is Nan or Inf, reRun this step
-    IF (.NOT.IEEE_IS_NORMAL(ABS(yn(i)))) THEN
+    IF (.NOT.IEEE_IS_NORMAL(yn(i))) THEN
       PleaseRerun = .True.
       IF (ABS(h-MinStepSize)/MinStepSize.LE.1D-13) THEN ! h is already the min
         PleaseTerminate = .True. ! stop the program
       ELSE
         ! hNew is likely not computated due to the presence of Nan or Inf value in yn & yerr
-        IF (.NOT.IEEE_IS_NORMAL(hNew)) THEN
-          hNew = MAX(MinStepSize,MIN(h, h*0.5D0)) ! just try to reduce it by half
-        ELSE
-          hNew = MAX(MinStepSize,MIN(hNew, h)) ! just take the smaller one 
-        END IF
+        hNew = MAX(MinStepSize,MIN(hNew, h*0.5D0)) ! just take the smaller one 
       END IF
       RETURN
     END IF

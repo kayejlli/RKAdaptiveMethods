@@ -13,6 +13,8 @@ import numpy as np
 #from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
+from mpmath import mpf, nstr, nprint, mp
+mp.dps = 100
 
 Sin = np.sin
 Cos = np.cos

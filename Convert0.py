@@ -23,7 +23,7 @@ b_ = True
 if filename.split('/')[1] in ['rk108.py','rk1210.py','rk1412.py','rk1412Long.py']:
   b_ = False
 
-real = False # for complex y & dy
+real = True # for complex y & dy
 
 # the lines that will be written in between [start coefficients definitions]
 #     and [end coefficients definitions]
@@ -112,9 +112,9 @@ construct_intermediate_steps.append('  ! ---------------------------------------
 
 
 if error:
-  more = PrintOutdys(Msize=stages, devString = 'dydt(t,y0,dy0,PleaseRerun)', breakNo = 6, test=True, yerr=False)
+  more = PrintOutdys(Msize=stages, devString = 'dev(t,y0,dy0,PleaseTerminate)', breakNo = 6, test=True, yerr=False)
 else:
-  more = PrintOutdys(Msize=stages, devString = 'dydt(t,y0,dy0,PleaseRerun)', breakNo = 6, test=True)
+  more = PrintOutdys(Msize=stages, devString = 'dev(t,y0,dy0,PleaseTerminate)', breakNo = 6, test=True)
 construct_intermediate_steps += more
 
 
